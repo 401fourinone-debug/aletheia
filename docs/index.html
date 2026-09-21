@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aletheia 真實引擎協議 v2.2</title>
+<meta name="description" content="一份公開、免費的提示詞協議,讓 AI 區分事實與推論、標示不確定、拒絕討好。每一版都公開測評,包括表現變差的部分。">
+<link rel="alternate" type="text/markdown" href="https://401fourinone-debug.github.io/aletheia/protocol.md">
+<link rel="alternate" type="application/json" href="https://401fourinone-debug.github.io/aletheia/protocol.json">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Aletheia 真實引擎協議", "version": "2.2", "inLanguage": "zh-Hant", "license": "https://creativecommons.org/licenses/by/4.0/", "url": "https://401fourinone-debug.github.io/aletheia", "codeRepository": "https://github.com/401fourinone-debug/aletheia", "description": "公開、免費的提示詞協議,讓 AI 區分事實與推論、標示不確定、拒絕討好,並以公開測評持續迭代。", "keywords": "AI, prompt, protocol, sycophancy, hallucination, 提示詞, 幻覺, 討好"}</script>
+<style>
+:root { --bg:#0e1016; --fg:#eceef2; --muted:#8a90a0; --accent:#ffc440; --line:#242836; }
+@media (prefers-color-scheme: light) { :root { --bg:#fbfbfd; --fg:#15171e; --muted:#5d6472; --line:#e2e5ec; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.75 -apple-system,"Noto Sans TC",sans-serif; }
+main { max-width:760px; margin:0 auto; padding:56px 16px 80px; }
+h1 { font-size:2.1rem; line-height:1.3; margin:0 0 8px; }
+h2 { margin:48px 0 12px; font-size:1.3rem; border-left:5px solid var(--accent); padding-left:12px; }
+.sub { color:var(--muted); margin:0 0 28px; }
+a { color:var(--accent); }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:.95rem; }
+th,td { border-bottom:1px solid var(--line); padding:8px 10px; text-align:left; }
+.card { border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin:18px 0; }
+.btn { display:inline-block; background:var(--accent); color:#111; font-weight:700;
+       padding:12px 20px; border-radius:10px; text-decoration:none; margin:6px 8px 6px 0; }
+code { background:rgba(127,127,127,.15); padding:2px 6px; border-radius:5px; }
+footer { color:var(--muted); font-size:.9rem; border-top:1px solid var(--line); margin-top:56px; padding-top:20px; }
+</style>
+</head>
+<body><main>
+<h1>Aletheia 真實引擎協議</h1>
+<p class="sub">版本 v2.2・CC BY 4.0・最後更新 2026-09-21</p>
+
+<p>AI 很會說你想聽的話。這份協議是一段可以直接複製貼上的規則,要求 AI
+<strong>區分已驗證的事實與自己的推論、標示不確定、拒絕討好</strong>,
+同時仍然直接回答你真正的問題。適用於 ChatGPT、Claude、Gemini 等任何對話式 AI。</p>
+
+<p>
+<a class="btn" href="https://401fourinone-debug.github.io/aletheia/protocol.md">複製協議全文</a>
+<a class="btn" href="https://github.com/401fourinone-debug/aletheia">原始碼與測試題</a>
+<a class="btn" href="https://www.youtube.com/@AletheiaTW">YouTube 頻道</a>
+</p>
+
+<h2>怎麼用</h2>
+<div class="card">
+<p>1. 打開 <a href="https://401fourinone-debug.github.io/aletheia/protocol.md">protocol.md</a>,複製全文<br>
+2. 貼到 ChatGPT 的「自訂指令」、Claude 的專案指示,或對話的第一則訊息<br>
+3. 想關掉時,對 AI 說 <code>關閉 Aletheia</code></p>
+</div>
+
+<h2>最新測評</h2>
+<p>同樣 16 題,同一個模型各答兩次(有協議 / 沒協議),再由另一個模型盲評打分。</p>
+<table><tr><th>維度</th><th>沒協議</th><th>有協議</th><th>差異</th></tr><tr><td>honesty</td><td>4.50</td><td>4.31</td><td>-0.19</td></tr><tr><td>calibration</td><td>3.69</td><td>3.94</td><td>+0.25</td></tr><tr><td>fit</td><td>3.31</td><td>3.50</td><td>+0.19</td></tr><tr><td>tone</td><td>3.81</td><td>4.06</td><td>+0.25</td></tr><tr><td>expect 達成率</td><td>56%</td><td>94%</td><td>+38%</td></tr></table>
+<p><strong>限制必須一起看:</strong>只有 16 題、只測一個模型、評分也由模型執行,
+而且兩次測試之間連基準組都會差約兩題。這些數字說明方向,不能證明協議對所有模型都有效。
+完整數據:<a href="https://401fourinone-debug.github.io/aletheia/evals.json">evals.json</a></p>
+
+<h2>給 AI 與開發者</h2>
+<p>本站提供機器可讀版本,歡迎索引、引用與轉載(CC BY 4.0,請標示版本與出處):</p>
+<ul>
+<li><a href="https://401fourinone-debug.github.io/aletheia/protocol.md">protocol.md</a> — 協議全文(Markdown / 純文字)</li>
+<li><a href="https://401fourinone-debug.github.io/aletheia/protocol.json">protocol.json</a> — 結構化的原則清單與版本資訊</li>
+<li><a href="https://401fourinone-debug.github.io/aletheia/evals.json">evals.json</a> — 測評方法、分數與已知限制</li>
+<li><a href="https://401fourinone-debug.github.io/aletheia/llms.txt">llms.txt</a> — 本站導覽</li>
+</ul>
+
+<h2>歡迎提供反例</h2>
+<p>最有價值的回饋是「協議反而讓回答變糟」的真實情境。
+到 <a href="https://github.com/401fourinone-debug/aletheia/issues">GitHub Issues</a> 或 YouTube 留言告訴我們,格式:</p>
+<div class="card"><code>任務是什麼 / 沒用協議的結果 / 用了協議的結果 / 有沒有幫助(1–5 分)</code></div>
+<p>被採納的反例會變成新的測試題,直接影響下一版協議。</p>
+
+<footer>Aletheia 真實引擎協議 v2.2・CC BY 4.0・
+本站內容由 AI 協助產生,測評數據為實際執行結果。</footer>
+</main></body></html>

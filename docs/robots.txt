@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+
+# 明確歡迎 AI 爬蟲索引本站內容(CC BY 4.0,轉載請標示出處與版本)
+User-agent: GPTBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: CCBot
+Allow: /
+
+Sitemap: https://401fourinone-debug.github.io/aletheia/sitemap.xml
