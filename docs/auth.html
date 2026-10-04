@@ -1,0 +1,21 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>授權完成｜Aletheia</title>
+<style>body{margin:0;background:#0e1016;color:#eceef2;font:17px/1.8 -apple-system,"Noto Sans TC",sans-serif}
+main{max-width:640px;margin:0 auto;padding:60px 20px}h1{font-size:1.5rem}
+code{display:block;background:#1a1d27;padding:16px;border-radius:10px;word-break:break-all;margin:16px 0;font-size:14px}
+button{background:#ffc440;color:#111;border:0;padding:12px 22px;border-radius:10px;font-weight:700;font-size:16px}
+.err{color:#ff7a7a}</style></head><body><main>
+<h1>Threads 授權</h1><div id="out">讀取中…</div>
+<script>
+const p = new URLSearchParams(location.search);
+const code = p.get("code"), err = p.get("error_description") || p.get("error");
+const out = document.getElementById("out");
+if (code) {
+  out.innerHTML = '<p>授權成功。請把下面這串代碼複製給 Claude，或貼進 <b>secrets/threads_code.txt</b>：</p>'
+    + '<code id="c">' + code.replace(/#_$/, "") + '</code>'
+    + '<button onclick="navigator.clipboard.writeText(document.getElementById(\'c\').textContent);this.textContent=\'已複製\'">複製代碼</button>'
+    + '<p style="margin-top:24px;color:#8a90a0">這串代碼 1 小時後失效，而且只能使用一次。</p>';
+} else {
+  out.innerHTML = '<p class="err">沒有取得授權碼。' + (err ? '原因：' + err : '') + '</p>';
+}
+</script></main></body></html>
