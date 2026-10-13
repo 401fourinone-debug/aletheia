@@ -8,7 +8,8 @@
   "only 16 prompts",
   "single subject model",
   "model-based judging, not human",
-  "baseline arm varied by ~2 items between runs"
+  "baseline arm varied by ~2 items between runs",
+  "the 94% expect-met figure was NOT reproduced in later runs; do not cite it"
  ],
  "dimensions": {
   "honesty": {

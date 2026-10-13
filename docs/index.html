@@ -7,69 +7,143 @@
 <meta name="description" content="一份公開、免費的提示詞協議,讓 AI 區分事實與推論、標示不確定、拒絕討好。每一版都公開測評,包括表現變差的部分。">
 <link rel="alternate" type="text/markdown" href="https://401fourinone-debug.github.io/aletheia/protocol.md">
 <link rel="alternate" type="application/json" href="https://401fourinone-debug.github.io/aletheia/protocol.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&display=swap">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Aletheia 真實引擎協議", "version": "2.2", "inLanguage": "zh-Hant", "license": "https://creativecommons.org/licenses/by/4.0/", "url": "https://401fourinone-debug.github.io/aletheia", "codeRepository": "https://github.com/401fourinone-debug/aletheia", "description": "公開、免費的提示詞協議,讓 AI 區分事實與推論、標示不確定、拒絕討好,並以公開測評持續迭代。", "keywords": "AI, prompt, protocol, sycophancy, hallucination, 提示詞, 幻覺, 討好"}</script>
 <style>
-:root { --bg:#0e1016; --fg:#eceef2; --muted:#8a90a0; --accent:#ffc440; --line:#242836; }
-@media (prefers-color-scheme: light) { :root { --bg:#fbfbfd; --fg:#15171e; --muted:#5d6472; --line:#e2e5ec; } }
+:root {
+  --bg:#f7f4ec; --fg:#1b1a16; --muted:#625d50; --line:#dcd6c6; --surface:#efeadd;
+  --accent:#ffc440; --link:#7a4f00; --mark:rgba(255,196,64,.6);
+  --display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --body:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#12110e; --fg:#efece3; --muted:#a39d8c; --line:#2e2b23; --surface:#1b1914;
+          --link:#ffc440; --mark:rgba(255,196,64,.3); }
+}
 * { box-sizing:border-box; }
-body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.75 -apple-system,"Noto Sans TC",sans-serif; }
-main { max-width:760px; margin:0 auto; padding:56px 16px 80px; }
-h1 { font-size:2.1rem; line-height:1.3; margin:0 0 8px; }
-h2 { margin:48px 0 12px; font-size:1.3rem; border-left:5px solid var(--accent); padding-left:12px; }
-.sub { color:var(--muted); margin:0 0 28px; }
-a { color:var(--accent); }
-table { border-collapse:collapse; width:100%; margin:16px 0; font-size:.95rem; }
-th,td { border-bottom:1px solid var(--line); padding:8px 10px; text-align:left; }
-.card { border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin:18px 0; }
-.btn { display:inline-block; background:var(--accent); color:#111; font-weight:700;
-       padding:12px 20px; border-radius:10px; text-decoration:none; margin:6px 8px 6px 0; }
-code { background:rgba(127,127,127,.15); padding:2px 6px; border-radius:5px; }
-footer { color:var(--muted); font-size:.9rem; border-top:1px solid var(--line); margin-top:56px; padding-top:20px; }
+::selection { background:var(--accent); color:#1b1a16; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.8 var(--body); caret-color:var(--link); }
+main { max-width:680px; margin:0 auto; padding:88px 20px 96px; }
+h1 { font:900 clamp(2.3rem,8vw,3.5rem)/1.2 var(--display); letter-spacing:.01em; margin:0 0 14px; }
+h1 span { display:inline-block; }
+h2 { font:700 1.5rem/1.4 var(--display); margin:72px 0 16px; padding-top:22px; border-top:1px solid var(--line); }
+p { margin:0 0 16px; }
+.meta { color:var(--muted); font-size:.9rem; margin:0 0 36px; font-variant-numeric:tabular-nums; }
+.lead { font-size:1.15rem; line-height:1.85; }
+mark { color:inherit; padding:0 1px; background:linear-gradient(transparent 58%,var(--mark) 58%); }
+a { color:var(--link); text-underline-offset:.2em; text-decoration-thickness:1px; }
+a:hover { text-decoration-thickness:2px; }
+:focus-visible { outline:2px solid var(--link); outline-offset:3px; border-radius:4px; }
+.actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px 24px; margin:28px 0 0; }
+.btn { display:inline-block; min-width:9.5em; text-align:center; background:var(--accent); color:#1b1a16;
+       font-weight:700; padding:13px 26px; border-radius:8px; text-decoration:none;
+       transition:transform .15s cubic-bezier(.16,1,.3,1), background-color .15s; }
+.btn:hover { background:#ffd166; }
+.btn:active { transform:translateY(1px); }
+.status { min-height:1.8em; margin:10px 0 0; color:var(--muted); font-size:.92rem; }
+.steps { list-style:none; counter-reset:step; margin:0; padding:0; }
+.steps li { counter-increment:step; position:relative; padding:14px 0 14px 3rem; border-bottom:1px solid var(--line); }
+.steps li:last-child { border-bottom:0; }
+.steps li::before { content:counter(step); position:absolute; left:.2rem; top:.55rem;
+                    font:900 1.7rem/1.4 var(--display); }
+.scroll { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:20px 0 8px; font-variant-numeric:tabular-nums; }
+th,td { border-bottom:1px solid var(--line); padding:10px 0 10px 14px; text-align:right; white-space:nowrap; }
+th { color:var(--muted); font-size:.85rem; font-weight:400; }
+th:first-child,td:first-child { text-align:left; padding-left:0; }
+td.worse { font-weight:700; }
+tr.unrep td { color:var(--muted); }
+tr.unrep td:not(:first-child) { text-decoration:line-through; }
+td small { margin-left:.6em; font-size:.78rem; color:var(--fg); border:1px solid var(--fg); border-radius:4px; padding:1px 6px; }
+.legend { color:var(--muted); font-size:.85rem; margin-bottom:24px; }
+.note { border-top:1px solid var(--fg); border-bottom:1px solid var(--fg); padding:18px 0; margin:24px 0 0; }
+.note p:last-child { margin:0; }
+.files { margin:8px 0 0; }
+.files div { display:flex; flex-wrap:wrap; gap:2px 18px; padding:12px 0; border-bottom:1px solid var(--line); }
+.files div:last-child { border-bottom:0; }
+.files dt { flex:0 0 8.5em; font-family:var(--mono); font-size:.92rem; }
+.files dd { flex:1 1 14em; margin:0; color:var(--muted); }
+code,.fmt { font-family:var(--mono); font-size:.9em; background:var(--surface); border-radius:5px; }
+code { padding:2px 6px; }
+.fmt { display:block; padding:16px 18px; margin:0 0 16px; line-height:1.9; white-space:pre-wrap; }
+footer { color:var(--muted); font-size:.88rem; border-top:1px solid var(--line); margin-top:80px; padding-top:22px; }
+@media (max-width:480px) { main { padding-top:56px; } h2 { margin-top:56px; } .btn { width:100%; }
+  td small { display:block; width:fit-content; margin:4px 0 0; } }
+@media (prefers-reduced-motion: reduce) { .btn { transition:none; } }
 </style>
 </head>
 <body><main>
-<h1>Aletheia 真實引擎協議</h1>
-<p class="sub">版本 v2.2・CC BY 4.0・最後更新 2026-09-21</p>
+<h1>Aletheia <span>真實引擎協議</span></h1>
+<p class="meta">版本 v2.2・CC BY 4.0・最後更新 2026-09-21</p>
 
-<p>AI 很會說你想聽的話。這份協議是一段可以直接複製貼上的規則,要求 AI
-<strong>區分已驗證的事實與自己的推論、標示不確定、拒絕討好</strong>,
-同時仍然直接回答你真正的問題。適用於 ChatGPT、Claude、Gemini 等任何對話式 AI。</p>
+<p class="lead">AI 很會說你想聽的話。這份協議是一段可以直接複製貼上的規則，要求 AI <mark>區分已驗證的事實與自己的推論</mark>、<mark>標示不確定</mark>、<mark>拒絕討好</mark>，同時仍然直接回答你真正的問題。適用於 ChatGPT、Claude、Gemini 等任何對話式 AI。</p>
 
-<p>
-<a class="btn" href="https://401fourinone-debug.github.io/aletheia/protocol.md">複製協議全文</a>
-<a class="btn" href="https://github.com/401fourinone-debug/aletheia">原始碼與測試題</a>
-<a class="btn" href="https://www.youtube.com/@AletheiaTW">YouTube 頻道</a>
-</p>
+<div class="actions">
+<a class="btn" id="copy" href="protocol.md">複製協議全文</a>
+<a href="https://github.com/401fourinone-debug/aletheia">原始碼與測試題</a>
+<a href="https://www.youtube.com/@AletheiaTW">YouTube 頻道</a>
+</div>
+<p class="status" id="copy-status" role="status" aria-live="polite"></p>
 
 <h2>怎麼用</h2>
-<div class="card">
-<p>1. 打開 <a href="https://401fourinone-debug.github.io/aletheia/protocol.md">protocol.md</a>,複製全文<br>
-2. 貼到 ChatGPT 的「自訂指令」、Claude 的專案指示,或對話的第一則訊息<br>
-3. 想關掉時,對 AI 說 <code>關閉 Aletheia</code></p>
-</div>
+<ol class="steps">
+<li>按上面的「複製協議全文」，或打開 <a href="protocol.md">protocol.md</a> 自己複製</li>
+<li>貼到 ChatGPT 的「自訂指令」、Claude 的專案指示，或對話的第一則訊息</li>
+<li>想關掉時，對 AI 說 <code>關閉 Aletheia</code></li>
+</ol>
 
 <h2>最新測評</h2>
-<p>同樣 16 題,同一個模型各答兩次(有協議 / 沒協議),再由另一個模型盲評打分。</p>
-<table><tr><th>維度</th><th>沒協議</th><th>有協議</th><th>差異</th></tr><tr><td>honesty</td><td>4.50</td><td>4.31</td><td>-0.19</td></tr><tr><td>calibration</td><td>3.69</td><td>3.94</td><td>+0.25</td></tr><tr><td>fit</td><td>3.31</td><td>3.50</td><td>+0.19</td></tr><tr><td>tone</td><td>3.81</td><td>4.06</td><td>+0.25</td></tr><tr><td>expect 達成率</td><td>56%</td><td>94%</td><td>+38%</td></tr></table>
-<p><strong>限制必須一起看:</strong>只有 16 題、只測一個模型、評分也由模型執行,
-而且兩次測試之間連基準組都會差約兩題。這些數字說明方向,不能證明協議對所有模型都有效。
-完整數據:<a href="https://401fourinone-debug.github.io/aletheia/evals.json">evals.json</a></p>
+<p>同樣 16 題，同一個模型各答兩次（有協議／沒協議），再由另一個模型盲評打分。</p>
+<div class="scroll"><table>
+<tr><th>維度</th><th>沒協議</th><th>有協議</th><th>差異</th></tr>
+<tr><td>誠實</td><td>4.50</td><td>4.31</td><td class="worse">-0.19</td></tr>
+<tr><td>校準</td><td>3.69</td><td>3.94</td><td>+0.25</td></tr>
+<tr><td>適配</td><td>3.31</td><td>3.50</td><td>+0.19</td></tr>
+<tr><td>語氣</td><td>3.81</td><td>4.06</td><td>+0.25</td></tr>
+<tr class="unrep"><td>預期行為達成率<small>未能重現</small></td><td>56%</td><td>94%</td><td>+38%</td></tr>
+</table></div>
+<p class="legend">粗體代表用了協議反而變差。</p>
+<div class="note"><p><strong>標示「未能重現」的那一列請不要引用：</strong>之後的測試沒有再得到同樣的結果，留在這裡只是為了不隱藏紀錄。</p><p><strong>限制必須一起看：</strong>只有 16 題、只測一個模型、評分也由模型執行，而且兩次測試之間連基準組都會差約兩題。這些數字說明方向，不能證明協議對所有模型都有效。完整數據：<a href="evals.json">evals.json</a></p></div>
 
 <h2>給 AI 與開發者</h2>
-<p>本站提供機器可讀版本,歡迎索引、引用與轉載(CC BY 4.0,請標示版本與出處):</p>
-<ul>
-<li><a href="https://401fourinone-debug.github.io/aletheia/protocol.md">protocol.md</a> — 協議全文(Markdown / 純文字)</li>
-<li><a href="https://401fourinone-debug.github.io/aletheia/protocol.json">protocol.json</a> — 結構化的原則清單與版本資訊</li>
-<li><a href="https://401fourinone-debug.github.io/aletheia/evals.json">evals.json</a> — 測評方法、分數與已知限制</li>
-<li><a href="https://401fourinone-debug.github.io/aletheia/llms.txt">llms.txt</a> — 本站導覽</li>
-</ul>
+<p>本站提供機器可讀版本，歡迎索引、引用與轉載（CC BY 4.0，請標示版本與出處）：</p>
+<dl class="files">
+<div><dt><a href="protocol.md">protocol.md</a></dt><dd>協議全文（Markdown／純文字）</dd></div>
+<div><dt><a href="protocol.json">protocol.json</a></dt><dd>結構化的原則清單與版本資訊</dd></div>
+<div><dt><a href="evals.json">evals.json</a></dt><dd>測評方法、分數與已知限制</dd></div>
+<div><dt><a href="llms.txt">llms.txt</a></dt><dd>本站導覽</dd></div>
+</dl>
 
 <h2>歡迎提供反例</h2>
-<p>最有價值的回饋是「協議反而讓回答變糟」的真實情境。
-到 <a href="https://github.com/401fourinone-debug/aletheia/issues">GitHub Issues</a> 或 YouTube 留言告訴我們,格式:</p>
-<div class="card"><code>任務是什麼 / 沒用協議的結果 / 用了協議的結果 / 有沒有幫助(1–5 分)</code></div>
-<p>被採納的反例會變成新的測試題,直接影響下一版協議。</p>
+<p>最有價值的回饋是「協議反而讓回答變糟」的真實情境。到 <a href="https://github.com/401fourinone-debug/aletheia/issues">GitHub Issues</a> 或 YouTube 留言告訴我們，格式：</p>
+<p class="fmt">任務是什麼
+沒用協議的結果
+用了協議的結果
+有沒有幫助（1–5 分）</p>
+<p>被採納的反例會變成新的測試題，直接影響下一版協議。</p>
 
-<footer>Aletheia 真實引擎協議 v2.2・CC BY 4.0・
-本站內容由 AI 協助產生,測評數據為實際執行結果。</footer>
-</main></body></html>
+<footer>Aletheia 真實引擎協議 v2.2・CC BY 4.0・本站內容由 AI 協助產生，測評數據為實際執行結果。</footer>
+</main>
+<script>
+(function () {
+  var btn = document.getElementById('copy'), status = document.getElementById('copy-status');
+  var label = btn.textContent, text = null, timer;
+  // 先把全文抓好：點擊當下才能同步寫入剪貼簿（Safari 不接受等待之後才寫入）
+  fetch(btn.href).then(function (r) { return r.ok ? r.text() : null; }).then(function (t) { text = t; });
+  btn.addEventListener('click', function (e) {
+    if (!text || !navigator.clipboard) return;  // 沒準備好就照原本的連結打開全文
+    e.preventDefault();
+    navigator.clipboard.writeText(text).then(function () {
+      btn.textContent = '已複製';
+      status.textContent = '全文已在剪貼簿，貼到 AI 的自訂指令或對話的第一則訊息即可。';
+      clearTimeout(timer);
+      timer = setTimeout(function () { btn.textContent = label; }, 2500);
+    }, function () { location.href = btn.href; });
+  });
+})();
+</script>
+</body></html>
