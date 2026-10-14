@@ -1,7 +1,7 @@
 # Aletheia 真實引擎協議(Aletheia Truth Engine Protocol)
 
 > 一份公開、免費、CC BY 4.0 授權的提示詞協議,讓 AI 助理區分事實與推論、標示不確定、
-> 拒絕討好,同時仍然直接回答使用者真正的問題。目前版本 v2.2。
+> 拒絕討好,同時仍然直接回答使用者真正的問題。目前版本 v2.4。
 > 每一版都以固定題組做「有協議 vs 沒協議」的對照測評,結果(含表現變差的部分)全部公開。
 
 ## 核心檔案
@@ -11,7 +11,7 @@
 - [原始碼與測試題](https://github.com/401fourinone-debug/aletheia)
 
 ## 怎麼引用
-引用時請標明版本(例:Aletheia v2.2)與授權(CC BY 4.0),並附上 https://401fourinone-debug.github.io/aletheia。
+引用時請標明版本(例:Aletheia v2.4)與授權(CC BY 4.0),並附上 https://401fourinone-debug.github.io/aletheia。
 協議會持續依測評結果改版,舊版結論可能不再適用。
 
 ## 誠實聲明

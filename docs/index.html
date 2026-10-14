@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aletheia 真實引擎協議 v2.2</title>
+<title>Aletheia 真實引擎協議 v2.4</title>
 <meta name="description" content="一份公開、免費的提示詞協議,讓 AI 區分事實與推論、標示不確定、拒絕討好。每一版都公開測評,包括表現變差的部分。">
 <link rel="alternate" type="text/markdown" href="https://401fourinone-debug.github.io/aletheia/protocol.md">
 <link rel="alternate" type="application/json" href="https://401fourinone-debug.github.io/aletheia/protocol.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&display=swap">
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Aletheia 真實引擎協議", "version": "2.2", "inLanguage": "zh-Hant", "license": "https://creativecommons.org/licenses/by/4.0/", "url": "https://401fourinone-debug.github.io/aletheia", "codeRepository": "https://github.com/401fourinone-debug/aletheia", "description": "公開、免費的提示詞協議,讓 AI 區分事實與推論、標示不確定、拒絕討好,並以公開測評持續迭代。", "keywords": "AI, prompt, protocol, sycophancy, hallucination, 提示詞, 幻覺, 討好"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Aletheia 真實引擎協議", "version": "2.4", "inLanguage": "zh-Hant", "license": "https://creativecommons.org/licenses/by/4.0/", "url": "https://401fourinone-debug.github.io/aletheia", "codeRepository": "https://github.com/401fourinone-debug/aletheia", "description": "公開、免費的提示詞協議,讓 AI 區分事實與推論、標示不確定、拒絕討好,並以公開測評持續迭代。", "keywords": "AI, prompt, protocol, sycophancy, hallucination, 提示詞, 幻覺, 討好"}</script>
 <style>
 :root {
   --bg:#f7f4ec; --fg:#1b1a16; --muted:#625d50; --line:#dcd6c6; --surface:#efeadd;
@@ -78,12 +78,13 @@ footer { color:var(--muted); font-size:.88rem; border-top:1px solid var(--line);
 </head>
 <body><main>
 <h1>Aletheia <span>真實引擎協議</span></h1>
-<p class="meta">版本 v2.2・CC BY 4.0・最後更新 2026-09-21</p>
+<p class="meta">版本 v2.4・CC BY 4.0・最後更新 2026-10-14</p>
 
 <p class="lead">AI 很會說你想聽的話。這份協議是一段可以直接複製貼上的規則，要求 AI <mark>區分已驗證的事實與自己的推論</mark>、<mark>標示不確定</mark>、<mark>拒絕討好</mark>，同時仍然直接回答你真正的問題。適用於 ChatGPT、Claude、Gemini 等任何對話式 AI。</p>
 
 <div class="actions">
 <a class="btn" id="copy" href="protocol.md">複製協議全文</a>
+<a href="findings.html">測量結果:只有一條規則站得住</a>
 <a href="https://github.com/401fourinone-debug/aletheia">原始碼與測試題</a>
 <a href="https://www.youtube.com/@AletheiaTW">YouTube 頻道</a>
 </div>
@@ -100,14 +101,15 @@ footer { color:var(--muted); font-size:.88rem; border-top:1px solid var(--line);
 <p>同樣 16 題，同一個模型各答兩次（有協議／沒協議），再由另一個模型盲評打分。</p>
 <div class="scroll"><table>
 <tr><th>維度</th><th>沒協議</th><th>有協議</th><th>差異</th></tr>
-<tr><td>誠實</td><td>4.50</td><td>4.31</td><td class="worse">-0.19</td></tr>
-<tr><td>校準</td><td>3.69</td><td>3.94</td><td>+0.25</td></tr>
-<tr><td>適配</td><td>3.31</td><td>3.50</td><td>+0.19</td></tr>
-<tr><td>語氣</td><td>3.81</td><td>4.06</td><td>+0.25</td></tr>
-<tr class="unrep"><td>預期行為達成率<small>未能重現</small></td><td>56%</td><td>94%</td><td>+38%</td></tr>
+<tr><td>全部平均</td><td>50%</td><td>45%</td><td class="worse">-5%</td></tr>
+<tr><td>實用性</td><td>3.68</td><td>3.47</td><td class="worse">-0.21</td></tr>
+<tr><td>誠實</td><td>4.50</td><td>4.64</td><td>+0.14</td></tr>
+<tr><td>校準</td><td>3.98</td><td>3.82</td><td class="worse">-0.17</td></tr>
+<tr><td>適配</td><td>4.26</td><td>3.58</td><td class="worse">-0.68</td></tr>
+<tr><td>語氣</td><td>4.39</td><td>3.94</td><td class="worse">-0.45</td></tr>
 </table></div>
 <p class="legend">粗體代表用了協議反而變差。</p>
-<div class="note"><p><strong>標示「未能重現」的那一列請不要引用：</strong>之後的測試沒有再得到同樣的結果，留在這裡只是為了不隱藏紀錄。</p><p><strong>限制必須一起看：</strong>只有 16 題、只測一個模型、評分也由模型執行，而且兩次測試之間連基準組都會差約兩題。這些數字說明方向，不能證明協議對所有模型都有效。完整數據：<a href="evals.json">evals.json</a></p></div>
+<div class="note"><p><strong>不要只看這張表。</strong>把 12 題各跑四輪取平均之後，只有「揭露夾帶指令」這一條指得出因果，其餘原則都落在雜訊範圍內。同樣條件、完全不給協議重跑，達成率會在 33%–58% 之間漂動。而且從未在 Claude 上測過，評審也只有一位、與受測模型同一家。<br><a href="findings.html"><strong>完整的失敗報告與八項方法錯誤 →</strong></a>　原始數據：<a href="evals.json">evals.json</a></p></div>
 
 <h2>給 AI 與開發者</h2>
 <p>本站提供機器可讀版本，歡迎索引、引用與轉載（CC BY 4.0，請標示版本與出處）：</p>
@@ -115,6 +117,7 @@ footer { color:var(--muted); font-size:.88rem; border-top:1px solid var(--line);
 <div><dt><a href="protocol.md">protocol.md</a></dt><dd>協議全文（Markdown／純文字）</dd></div>
 <div><dt><a href="protocol.json">protocol.json</a></dt><dd>結構化的原則清單與版本資訊</dd></div>
 <div><dt><a href="evals.json">evals.json</a></dt><dd>測評方法、分數與已知限制</dd></div>
+<div><dt><a href="findings.md">findings.md</a></dt><dd>失敗報告:哪一條規則可重現、哪些不行、我們犯的錯</dd></div>
 <div><dt><a href="llms.txt">llms.txt</a></dt><dd>本站導覽</dd></div>
 </dl>
 
@@ -126,7 +129,7 @@ footer { color:var(--muted); font-size:.88rem; border-top:1px solid var(--line);
 有沒有幫助（1–5 分）</p>
 <p>被採納的反例會變成新的測試題，直接影響下一版協議。</p>
 
-<footer>Aletheia 真實引擎協議 v2.2・CC BY 4.0・本站內容由 AI 協助產生，測評數據為實際執行結果。</footer>
+<footer>Aletheia 真實引擎協議 v2.4・CC BY 4.0・本站內容由 AI 協助產生，測評數據為實際執行結果。</footer>
 </main>
 <script>
 (function () {

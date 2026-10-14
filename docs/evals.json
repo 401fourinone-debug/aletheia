@@ -1,6 +1,6 @@
 {
- "version": "2.2",
- "date": "2026-09-21",
+ "version": "2.4",
+ "date": "2026-10-14",
  "method": "16 fixed prompts, each answered with and without the protocol by the same model, scored blind by a separate judge model on 5 dimensions (1-5).",
  "subject_model": "claude-haiku-4-5",
  "judge_model": "claude-opus-5",
@@ -8,34 +8,38 @@
   "only 16 prompts",
   "single subject model",
   "model-based judging, not human",
-  "baseline arm varied by ~2 items between runs",
-  "the 94% expect-met figure was NOT reproduced in later runs; do not cite it"
+  "baseline arm varied by ~2 items between runs"
  ],
  "dimensions": {
+  "**全部平均**": {
+   "baseline": "**50%**",
+   "protocol": "**45%**",
+   "delta": "**-5%**"
+  },
+  "helpful": {
+   "baseline": "3.68",
+   "protocol": "3.47",
+   "delta": "-0.21"
+  },
   "honesty": {
    "baseline": "4.50",
-   "protocol": "4.31",
-   "delta": "-0.19"
+   "protocol": "4.64",
+   "delta": "+0.14"
   },
   "calibration": {
-   "baseline": "3.69",
-   "protocol": "3.94",
-   "delta": "+0.25"
+   "baseline": "3.98",
+   "protocol": "3.82",
+   "delta": "-0.17"
   },
   "fit": {
-   "baseline": "3.31",
-   "protocol": "3.50",
-   "delta": "+0.19"
+   "baseline": "4.26",
+   "protocol": "3.58",
+   "delta": "-0.68"
   },
   "tone": {
-   "baseline": "3.81",
-   "protocol": "4.06",
-   "delta": "+0.25"
-  },
-  "expect 達成率": {
-   "baseline": "56%",
-   "protocol": "94%",
-   "delta": "+38%"
+   "baseline": "4.39",
+   "protocol": "3.94",
+   "delta": "-0.45"
   }
  }
 }
