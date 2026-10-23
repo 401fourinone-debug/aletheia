@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aletheia 動態島</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Aletheia 專案的測評循環與任務進度,做成可點開、可傾斜的 3D 動態島。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&display=swap">
+<style>
+/* 版面:上方一支傾斜的手機頂部,動態島浮在上面;下方是兩欄清單(流程、任務),點哪一項,島就切到哪一項 */
+:root {
+  --bg:#f7f4ec; --fg:#1b1a16; --muted:#625d50; --line:#dcd6c6; --surface:#efeadd;
+  --accent:#ffc440; --link:#7a4f00;
+  --ok:#2f7d4f; --doing:#b07800; --todo:#8a8474;
+  /* 島本身是實體黑玻璃,兩種主題都一樣 */
+  --ink:#050505; --ink-side:#000; --ink-fg:#f4f1e8; --ink-muted:#9a958a; --ink-line:#26241f;
+  --phone:#1d1c1a; --phone-edge:#3a3833; --screen:#0d0d0c;
+  --display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --body:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --spring:cubic-bezier(.34,1.45,.55,1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg:#12110e; --fg:#efece3; --muted:#a39d8c; --line:#2e2b23; --surface:#1b1914;
+    --link:#ffc440; --ok:#6cc58f; --doing:#ffc440; --todo:#7d786b; --phone:#26241f; --phone-edge:#45423a; color-scheme:dark; }
+}
+:root[data-theme="dark"] { --bg:#12110e; --fg:#efece3; --muted:#a39d8c; --line:#2e2b23; --surface:#1b1914;
+  --link:#ffc440; --ok:#6cc58f; --doing:#ffc440; --todo:#7d786b; --phone:#26241f; --phone-edge:#45423a; color-scheme:dark; }
+
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.75 var(--body); }
+main { max-width:960px; margin:0 auto; padding-block:56px 80px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font:900 clamp(2rem,6vw,3rem)/1.2 var(--display); margin:0 0 8px; text-wrap:balance; }
+h2 { font:700 1.25rem/1.4 var(--display); margin:0 0 14px; }
+.meta { color:var(--muted); font-size:.9rem; margin:0; }
+.meta a, footer a { color:var(--link); }
+:focus-visible { outline:2px solid var(--link); outline-offset:3px; border-radius:6px; }
+
+/* ---------- 3D 舞台 ---------- */
+.stage { perspective:1100px; padding:36px 0 8px; display:grid; justify-items:center; }
+.tilt { position:relative; width:min(620px,100%); transform-style:preserve-3d;
+  transform:rotateX(var(--rx,14deg)) rotateY(var(--ry,-10deg)); transition:transform .5s cubic-bezier(.16,1,.3,1); }
+.phone { position:relative; border-radius:46px 46px 0 0; padding:12px 12px 0; background:var(--phone);
+  box-shadow:inset 0 0 0 1.5px var(--phone-edge), 0 40px 60px -30px rgba(0,0,0,.55); transform-style:preserve-3d; }
+.phone::after { /* 機身厚度 */ content:""; position:absolute; inset:0; border-radius:inherit; background:var(--phone-edge);
+  transform:translateZ(-14px); }
+.screen { position:relative; height:340px; border-radius:36px 36px 0 0; background:
+  radial-gradient(120% 80% at 70% 0%, #2a2414 0%, var(--screen) 60%); overflow:visible; transform-style:preserve-3d;
+}
+.screen::after { content:""; position:absolute; left:-13px; right:-13px; bottom:-1px; height:45%; pointer-events:none;
+  background:linear-gradient(transparent, var(--bg)); transform:translateZ(1px); }
+.statusbar { display:flex; justify-content:space-between; padding:16px 30px 0; color:var(--ink-fg);
+  font:600 .85rem/1 var(--body); font-variant-numeric:tabular-nums; }
+.wall { position:absolute; left:28px; right:28px; bottom:70px; color:#6b6555; font:900 clamp(1.4rem,5vw,2.2rem)/1.2 var(--display); }
+.wall small { display:block; font:400 .8rem/1.6 var(--body); color:#5b5649; }
+
+/* ---------- 動態島 ---------- */
+.island { position:absolute; top:12px; left:50%; z-index:2; width:var(--w,230px); height:var(--h,46px);
+  translate:-50% 0; transform:translateZ(46px); transform-style:preserve-3d;
+  border:0; padding:0; color:var(--ink-fg); font:inherit; text-align:left; cursor:pointer;
+  border-radius:var(--r,23px); background:var(--ink);
+  box-shadow:0 0 0 1px #1c1b18, 0 18px 40px -8px rgba(0,0,0,.7), 0 0 34px -6px var(--glow, rgba(255,196,64,.35));
+  transition:width .55s var(--spring), height .55s var(--spring), border-radius .55s var(--spring), box-shadow .4s; }
+.island::before { /* 側面厚度 */ content:""; position:absolute; inset:0; border-radius:inherit; background:var(--ink-side);
+  transform:translateZ(-10px); box-shadow:0 0 0 1px #000; }
+.island::after { /* 頂面反光 */ content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background:linear-gradient(160deg, rgba(255,255,255,.13), transparent 38%); }
+.island:hover { --glow:rgba(255,196,64,.6); }
+.island.bump { animation:bump .45s var(--spring); }
+@keyframes bump { 40% { scale:1.06 .94; } }
+
+.compact, .expanded { position:absolute; inset:0; transition:opacity .25s, filter .25s; }
+.compact { display:flex; align-items:center; gap:10px; padding:0 8px 0 9px; }
+.badge { flex:none; width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
+  background:var(--accent); color:#1b1a16; font:900 .95rem/1 var(--display); }
+.badge.ok { background:#6cc58f; } .badge.todo { background:#4a463d; color:var(--ink-fg); }
+.c-text { flex:1; min-width:0; font-size:.88rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ring { flex:none; width:30px; height:30px; }
+.ring circle { fill:none; stroke-width:3.5; }
+.ring .track { stroke:#2c2a25; }
+.ring .bar { stroke:var(--accent); stroke-linecap:round; transform:rotate(-90deg); transform-origin:50% 50%;
+  transition:stroke-dashoffset .6s var(--spring); }
+
+.expanded { padding:20px 22px 18px; opacity:0; filter:blur(6px); pointer-events:none; display:flex; flex-direction:column; gap:12px; }
+.island.open .compact { opacity:0; filter:blur(6px); pointer-events:none; }
+.island.open .expanded { opacity:1; filter:none; pointer-events:auto; transition-delay:.12s; }
+.e-head { display:flex; gap:14px; align-items:center; }
+.e-head .badge { width:44px; height:44px; font-size:1.3rem; }
+.e-kicker { color:var(--ink-muted); font-size:.78rem; letter-spacing:.08em; }
+.e-title { font:700 1.2rem/1.35 var(--display); }
+.e-detail { margin:0; color:#d6d2c6; font-size:.92rem; line-height:1.7; }
+.e-file { font-family:var(--mono); font-size:.8rem; color:var(--accent); }
+.dots { display:flex; gap:6px; margin-top:auto; }
+.dots i { flex:1; height:4px; border-radius:2px; background:#2c2a25; transition:background .3s; }
+.dots i.on { background:var(--accent); } .dots i.past { background:#6b5a2a; }
+.e-nav { display:flex; justify-content:space-between; align-items:center; color:var(--ink-muted); font-size:.78rem; }
+.e-nav span[role="button"] { color:var(--ink-fg); padding:4px 10px; border-radius:999px; background:#1d1c19; }
+
+.floor { width:min(520px,90%); height:36px; margin-top:-6px; border-radius:50%;
+  background:radial-gradient(closest-side, rgba(0,0,0,.28), transparent); }
+.hint { color:var(--muted); font-size:.85rem; margin:6px 0 0; text-align:center; }
+.controls { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:14px 0 0; }
+.controls button { font:inherit; font-size:.88rem; color:var(--fg); background:var(--surface); border:1px solid var(--line);
+  border-radius:999px; padding:6px 16px; cursor:pointer; }
+.controls button[aria-pressed="true"] { background:var(--accent); color:#1b1a16; border-color:var(--accent); }
+
+/* ---------- 清單 ---------- */
+.lists { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:40px; margin-top:56px; }
+.lists section { min-width:0; }
+.sub { color:var(--muted); font-size:.88rem; margin:-8px 0 12px; }
+ol, ul { list-style:none; margin:0; padding:0; }
+.item { display:grid; grid-template-columns:2.6rem 1fr auto; gap:4px 10px; align-items:baseline; width:100%;
+  padding:11px 6px; border:0; border-bottom:1px solid var(--line); background:none; color:inherit; font:inherit;
+  text-align:left; cursor:pointer; border-radius:0; transition:background .15s; }
+.item:hover { background:var(--surface); }
+.item[aria-current="true"] { background:var(--surface); box-shadow:inset 3px 0 0 var(--accent); }
+.item .n { font:900 1.2rem/1 var(--display); font-variant-numeric:tabular-nums; }
+.item .d { font-family:var(--mono); font-size:.78rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+.item .t { min-width:0; }
+.item .t small { display:block; color:var(--muted); font-size:.82rem; line-height:1.5; }
+.chip { font-size:.72rem; letter-spacing:.06em; border:1px solid currentColor; border-radius:999px; padding:0 8px; white-space:nowrap; }
+.chip.ok { color:var(--ok); } .chip.doing { color:var(--doing); } .chip.todo { color:var(--todo); }
+footer { color:var(--muted); font-size:.85rem; border-top:1px solid var(--line); margin-top:64px; padding-top:18px; }
+
+@media (max-width:520px) {
+  .screen { height:300px; } .phone { border-radius:38px 38px 0 0; padding:9px 9px 0; } .screen { border-radius:30px 30px 0 0; }
+  .statusbar { padding:14px 22px 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tilt, .island, .compact, .expanded, .ring .bar { transition:none; }
+  .island.bump { animation:none; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Aletheia 動態島</h1>
+  <p class="meta">專案的測評循環與任務進度・點島展開,拖曳或移動滑鼠傾斜・<a href="./">回首頁</a></p>
+
+  <div class="stage" id="stage">
+    <div class="tilt" id="tilt">
+      <div class="phone">
+        <div class="screen">
+          <div class="statusbar"><span id="clock">9:41</span><span>v2.4</span></div>
+          <button class="island" id="island" type="button" aria-expanded="false" aria-label="展開動態島">
+            <div class="compact">
+              <span class="badge" id="cBadge">1</span>
+              <span class="c-text" id="cText"></span>
+              <svg class="ring" viewBox="0 0 30 30" aria-hidden="true">
+                <circle class="track" cx="15" cy="15" r="12"></circle>
+                <circle class="bar" id="cRing" cx="15" cy="15" r="12" stroke-dasharray="75.4" stroke-dashoffset="75.4"></circle>
+              </svg>
+            </div>
+            <div class="expanded" id="exp">
+              <div class="e-head">
+                <span class="badge" id="eBadge">1</span>
+                <div><div class="e-kicker" id="eKicker"></div><div class="e-title" id="eTitle"></div></div>
+              </div>
+              <p class="e-detail" id="eDetail"></p>
+              <div class="e-file" id="eFile"></div>
+              <div class="dots" id="dots"></div>
+              <div class="e-nav"><span role="button" tabindex="0" id="prev">‹ 上一項</span><span id="pos"></span><span role="button" tabindex="0" id="next">下一項 ›</span></div>
+            </div>
+          </button>
+          <div class="wall">真實引擎協議<small>寫協議 → 測評 → 公開 → 修改,一直循環</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="floor" aria-hidden="true"></div>
+    <div class="controls" role="group" aria-label="島上顯示的內容">
+      <button type="button" id="modeFlow" aria-pressed="true">測評循環</button>
+      <button type="button" id="modeTask" aria-pressed="false">任務進度</button>
+      <button type="button" id="play" aria-pressed="true">自動輪播</button>
+    </div>
+    <p class="hint">鍵盤:← → 切換,Enter 展開,Esc 收合</p>
+  </div>
+
+  <div class="lists">
+    <section>
+      <h2>測評循環</h2>
+      <p class="sub">每一版協議都走一次這七步,第七步接回第一步。</p>
+      <ol id="flowList"></ol>
+    </section>
+    <section>
+      <h2>任務進度</h2>
+      <p class="sub">完成的依 git 紀錄;待辦取自失敗報告的〈限制與未知〉。</p>
+      <ul id="taskList"></ul>
+    </section>
+  </div>
+
+  <footer>Aletheia 真實引擎協議・CC BY 4.0・<a href="findings.html">失敗報告</a>・<a href="https://github.com/401fourinone-debug/aletheia">原始碼</a></footer>
+</main>
+
+<script>
+(() => {
+  const FLOW = [
+    { title:"寫協議", file:"SKILL.md", detail:"把原則寫成一段可直接貼進任何 AI 的規則。目前 v2.4,11,651 字、12 條原則。" },
+    { title:"設計題目", file:"evals/cases.jsonl", detail:"16 題,涵蓋簡單題、產出型任務、被施壓改口、高風險放行與夾帶指令。" },
+    { title:"對照測試", file:"evals/", detail:"同一題分別跑「有協議」與「沒協議」,立場題必須用真實兩輪對話。" },
+    { title:"盲評打分", file:"evals/rubric.md", detail:"實用、誠實、校準、適配、語氣五個維度各 1–5 分,評審不看格式。" },
+    { title:"公開報告", file:"evals/reports/", detail:"每一版都公開,協議反而變差的題目也列出來。" },
+    { title:"收集反例", file:"GitHub Issues", detail:"使用者回報「套了協議反而變糟」的真實例子,採納後變成新題目。" },
+    { title:"改下一版", file:"SKILL.md", detail:"失分處列為優先修改項目,改完回到第一步重新測。" }
+  ];
+  const TASKS = [
+    { date:"09-20", title:"v2.1 協議全文、測試題、評分標準", status:"ok" },
+    { date:"09-20", title:"v2.2:修掉格式膨脹與假精確,新增 P10", status:"ok" },
+    { date:"09-21", title:"網站與給 AI 讀的結構化資料", status:"ok" },
+    { date:"10-04", title:"隱私權政策、服務條款、Threads 授權頁", status:"ok" },
+    { date:"10-13", title:"首頁改版,94% 標示為未能重現", status:"ok" },
+    { date:"10-14", title:"失敗報告:只有 1 條規則可重現", status:"ok" },
+    { date:"—", title:"收集使用者反例", status:"doing", note:"Issues 持續開放" },
+    { date:"—", title:"在 Claude 上測試", status:"todo", note:"API 額度用完,一次都還沒跑" },
+    { date:"—", title:"兩家不同公司交叉評分", status:"todo", note:"目前評審與受測模型同一家" },
+    { date:"—", title:"擴充題數、跨模型測試", status:"todo", note:"樣本太小,只能看方向" },
+    { date:"—", title:"查出 522 字與 11,651 字的差距", status:"todo", note:"夾帶指令命中率 50% 對 100%" },
+    { date:"—", title:"排程失敗要有提醒", status:"todo", note:"曾連續崩三天沒人知道" }
+  ];
+  const LABEL = { ok:"完成", doing:"進行中", todo:"待辦" };
+  const C = 2 * Math.PI * 12;
+  const $ = id => document.getElementById(id);
+  const island = $("island"), exp = $("exp");
+  let mode = "flow", idx = 0, open = false, playing = true, timer = null;
+
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) { playing = false; $("play").setAttribute("aria-pressed", "false"); }
+
+  // 清單
+  $("flowList").innerHTML = FLOW.map((f, i) =>
+    `<li><button class="item" type="button" data-mode="flow" data-i="${i}"><span class="n">${i + 1}</span>
+     <span class="t">${f.title}<small>${f.file}</small></span><span></span></button></li>`).join("");
+  $("taskList").innerHTML = TASKS.map((t, i) =>
+    `<li><button class="item" type="button" data-mode="task" data-i="${i}"><span class="d">${t.date}</span>
+     <span class="t">${t.title}${t.note ? `<small>${t.note}</small>` : ""}</span>
+     <span class="chip ${t.status}">${LABEL[t.status]}</span></button></li>`).join("");
+
+  const list = () => mode === "flow" ? FLOW : TASKS;
+  const doneCount = TASKS.filter(t => t.status === "ok").length;
+
+  function render(bump) {
+    const items = list(), it = items[idx];
+    let badge, badgeCls = "", kicker, ratio, file;
+    if (mode === "flow") {
+      badge = idx + 1; kicker = `測評循環・第 ${idx + 1} 步 / 共 ${FLOW.length} 步`;
+      ratio = (idx + 1) / FLOW.length; file = it.file;
+    } else {
+      badge = it.status === "ok" ? "✓" : it.status === "doing" ? "…" : "○";
+      badgeCls = it.status === "ok" ? "ok" : it.status === "todo" ? "todo" : "";
+      kicker = `任務・${LABEL[it.status]}${it.date !== "—" ? "・2026-" + it.date : ""}`;
+      ratio = doneCount / TASKS.length; file = `已完成 ${doneCount} / ${TASKS.length} 項`;
+    }
+    for (const b of [$("cBadge"), $("eBadge")]) { b.textContent = badge; b.className = "badge " + badgeCls; }
+    $("cText").textContent = it.title;
+    $("cRing").style.strokeDashoffset = C * (1 - ratio);
+    $("eKicker").textContent = kicker;
+    $("eTitle").textContent = it.title;
+    $("eDetail").textContent = mode === "flow" ? it.detail : (it.note || "依 git 提交紀錄,已上線。");
+    $("eFile").textContent = file;
+    $("dots").innerHTML = items.map((_, i) => `<i class="${i === idx ? "on" : i < idx ? "past" : ""}"></i>`).join("");
+    $("pos").textContent = `${idx + 1} / ${items.length}`;
+    document.querySelectorAll(".item").forEach(el =>
+      el.setAttribute("aria-current", el.dataset.mode === mode && +el.dataset.i === idx ? "true" : "false"));
+    size();
+    if (bump && !reduce) { island.classList.remove("bump"); void island.offsetWidth; island.classList.add("bump"); }
+  }
+
+  function size() {
+    const max = island.parentElement.clientWidth - 24;
+    if (open) {
+      const w = Math.min(520, max);
+      island.style.setProperty("--w", w + "px");
+      exp.style.width = w + "px"; exp.style.height = "auto"; exp.style.position = "relative";
+      const h = exp.scrollHeight;
+      exp.style.width = exp.style.height = exp.style.position = "";
+      island.style.setProperty("--h", h + "px");
+      island.style.setProperty("--r", "34px");
+    } else {
+      island.style.setProperty("--w", Math.min(250, max) + "px");
+      island.style.setProperty("--h", "46px");
+      island.style.setProperty("--r", "23px");
+    }
+  }
+
+  function go(d) { const n = list().length; idx = (idx + d + n) % n; render(true); }
+  function setOpen(v) {
+    open = v; island.classList.toggle("open", v);
+    island.setAttribute("aria-expanded", v); island.setAttribute("aria-label", v ? "收合動態島" : "展開動態島");
+    size(); schedule();
+  }
+  function setMode(m, i = 0) {
+    mode = m; idx = i;
+    $("modeFlow").setAttribute("aria-pressed", m === "flow");
+    $("modeTask").setAttribute("aria-pressed", m === "task");
+    render(true); schedule();
+  }
+  function schedule() {
+    clearInterval(timer);
+    if (playing && !open) timer = setInterval(() => go(1), 3200);
+  }
+
+  island.addEventListener("click", e => {
+    if (e.target.id === "prev") { go(-1); return; }
+    if (e.target.id === "next") { go(1); return; }
+    setOpen(!open);
+  });
+  for (const id of ["prev", "next"]) $(id).addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); go(id === "prev" ? -1 : 1); }
+  });
+  document.addEventListener("keydown", e => {
+    if (e.target.closest("input,textarea")) return;
+    if (e.key === "ArrowRight") go(1);
+    else if (e.key === "ArrowLeft") go(-1);
+    else if (e.key === "Escape" && open) setOpen(false);
+  });
+  $("modeFlow").onclick = () => setMode("flow");
+  $("modeTask").onclick = () => setMode("task");
+  $("play").onclick = () => { playing = !playing; $("play").setAttribute("aria-pressed", playing); schedule(); };
+  document.querySelectorAll(".item").forEach(el => el.addEventListener("click", () => {
+    setMode(el.dataset.mode, +el.dataset.i);
+    if (!open) setOpen(true);
+    $("stage").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }));
+
+  // 3D 傾斜:滑鼠或觸控拖曳
+  const tilt = $("tilt"), stage = $("stage");
+  if (!reduce) {
+    stage.addEventListener("pointermove", e => {
+      const r = stage.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+      tilt.style.setProperty("--ry", (x * 28).toFixed(1) + "deg");
+      tilt.style.setProperty("--rx", (10 - y * 22).toFixed(1) + "deg");
+    });
+    stage.addEventListener("pointerleave", () => { tilt.style.removeProperty("--ry"); tilt.style.removeProperty("--rx"); });
+  }
+
+  const clock = () => { const d = new Date(); $("clock").textContent = d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); };
+  clock(); setInterval(clock, 30000);
+  addEventListener("resize", size);
+  render(false); schedule();
+})();
+</script>
+</body>
+</html>
