@@ -1313,10 +1313,16 @@ async function main() {
       const cab = new THREE.Group(); piv.add(cab);
       const add = (geo, m, x, y, z, sx, sy, sz) => { const mm = new THREE.Mesh(geo, m); mm.position.set(x, y, z); mm.scale.set(sx, sy, sz); mm.castShadow = true; mm.userData.sign = tag; cab.add(mm); signMeshes.push(mm); };
       add(G.cyl, gold, 0, -.06, 0, .015, .12, .015);
-      add(G.rbox, mat(cabinCols[k % 6]), 0, -.2, 0, .2, .17, .17);
-      add(G.dome, gold, 0, -.115, 0, .22, .07, .19);
-      add(G.box, glowMat, 0, -.19, .088, .14, .07, .006); add(G.box, glowMat, 0, -.19, -.088, .14, .07, .006);
+      add(G.rbox, mat(cabinCols[k % 6]), 0, -.255, 0, .21, .085, .18);
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) add(G.cyl, gold, sx * .09, -.18, sz * .075, .012, .13, .012);
+      add(G.dome, gold, 0, -.115, 0, .23, .07, .2); add(G.sphere, glowMat, 0, -.125, 0, .03, .02, .03);
       add(G.sphere, gold, 0, -.05, 0, .03, .03, .03);
+      // 乘客:有人搭乘時才出現
+      const pg = new THREE.Group(); pg.visible = false; cab.add(pg);
+      const bodyMat = new THREE.MeshStandardMaterial({ color:"#f2b5c6", roughness:.7 }), hairMat = new THREE.MeshStandardMaterial({ color:"#2e2320", roughness:.7 });
+      for (const [geo, m2, y, sx, sy, sz] of [[G.sphere, bodyMat, -.2, .085, .09, .075], [G.sphere, new THREE.MeshStandardMaterial({ color:"#f3d2b8", roughness:.7 }), -.135, .07, .07, .07], [G.dome, hairMat, -.13, .074, .05, .074]]) {
+        const mm = new THREE.Mesh(geo, m2); mm.position.y = y; mm.scale.set(sx, sy, sz); mm.castShadow = true; pg.add(mm); }
+      cab.userData.pass = { pg, bodyMat, hairMat, rider:null };
       wheel.gondolas.push(cab);
     }
     for (let k = 0; k < 18; k++) { const a = k / 18 * Math.PI * 2; extraSpk.push([cx + Math.cos(a) * (R + .1), cy + Math.sin(a) * (R + .1), cz + .2]); }
@@ -1327,8 +1333,15 @@ async function main() {
   wheelBulbs.forEach((b, i) => { wbMesh.setMatrixAt(i, new THREE.Matrix4().makeTranslation(b.local.x, b.local.y, b.local.z)); wbMesh.setColorAt(i, new Col("#fff3d6")); });
   wheel.rot.add(wbMesh);
   const WB_PAL = ["#ff6b8b", "#ffb347", "#ffe66d", "#7cf29a", "#6fd6ff", "#a98bff", "#ff8fe0"].map(c => new Col(c)), _wb = new Col();
+  wheel.pause = 0; wheel.onBottom = null;
   function updateWheel(dt) {
-    wheel.rot.rotation.z += dt * wheel.speed; wheel.gondolas.forEach(g => { g.rotation.z = -wheel.rot.rotation.z; });
+    const prev = wheel.rot.rotation.z;
+    if (wheel.pause > 0) wheel.pause -= dt; else wheel.rot.rotation.z += dt * wheel.speed;
+    const now = wheel.rot.rotation.z, B = -Math.PI / 2;
+    if (now !== prev) for (let k = 0; k < 16; k++) { const base = k / 16 * Math.PI * 2;
+      const a0 = ((prev + base - B) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2), a1 = ((now + base - B) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      if (a1 < a0 && dt > 0) { wheel.rot.rotation.z = now - a1 / 1; wheel.pause = 2.4; if (wheel.onBottom) wheel.onBottom(k); break; } }
+    wheel.gondolas.forEach(g => { g.rotation.z = -wheel.rot.rotation.z; });
     const step = Math.floor(state.time * 8), glow = Math.max(state.night || 0, .7);
     wheelBulbs.forEach((b, i) => { const on = b.ring === 1 ? (Math.floor(state.time * 2) + b.j) % 2 === 0 : (b.j + step) % 6 < 4;
       _wb.copy(WB_PAL[(b.j + (b.ring === 2 ? step : Math.floor(step / 2))) % WB_PAL.length]); if (!on) _wb.multiplyScalar(.15); _wb.lerp(new Col("#fff3d6"), 1 - glow); wbMesh.setColorAt(i, _wb); });
@@ -1667,6 +1680,44 @@ async function main() {
       g.userData.broom = broom; } });
     sweeper.kind = "sweeper"; sweeper.a = at(-1.05, .95); sweeper.b = at(-.55, 1.22); sweeper.t = 0; sweeper.pos = sweeper.a.clone(); npcs.push(sweeper);
   }
+  // 反例港港邊的瞭望望遠鏡(投幣式),其中一台有訪客在看
+  {
+    const s = islandById["port"], own = { type:"island", i:s.index };
+    [135, 162, 200, 228, 252].forEach((deg, k) => {
+      const a = deg * Math.PI / 180, x = s.pos.x + Math.cos(a) * 1.5, z = s.pos.z + Math.sin(a) * 1.5, ry = Math.atan2(Math.cos(a), Math.sin(a));
+      const bp = maker(kit, baseM(x, s.top, z, 1.42, ry), own);
+      bp("cyl",0,.02,0,.12,.04,.12,"#8a8f96"); bp("cyl",0,.17,0,.035,.28,.035,"#3e7c8c"); bp("rbox",0,.31,-.01,.1,.07,.06,"#3e7c8c");
+      bp("rbox",0,.37,.01,.17,.07,.08,"#4f97a8", 0, -.25);
+      for (const sx of [-1, 1]) { bp("cyl",sx * .045,.395,.065,.045,.05,.045,"#2f6070",0,Math.PI / 2 - .25); bp("cyl",sx * .045,.36,-.04,.025,.03,.025,"#211d1d",0,Math.PI / 2 - .25); }
+      bp("box",0,.415,.045,.18,.012,.06,"#3e7c8c",0,-.4); bp("box",0,.3,.022,.03,.04,.005,"#e8c25a");
+      if (k === 2) { const v = makeNPC({ island:s.index, body:"#fcea8b", legs:"#4a6fa5", extra:({ add, m, head }) => { add(G.dome, m("#2f7fa8"), 0, .04, 0, .17, .07, .17, head); } });
+        v.kind = "viewer"; v.pos = new V3(x - Math.cos(a) * .2, s.top, z - Math.sin(a) * .2); v.face = Math.atan2(Math.cos(a), Math.sin(a)); npcs.push(v); }
+    });
+  }
+  // 摩天輪排隊與搭乘:轉到最低點的吊艙會停下,乘客下車走回隊尾,隊伍第一位上車
+  const ride = { queue:[], walkers:[] };
+  {
+    const s = islandById["web"], cx = s.pos.x, cz = s.pos.z - .42, ty = s.top;
+    const outfits = [["#f2b5c6", "#4a6fa5"], ["#9cc27a", "#3b4660"], ["#fcea8b", "#5a4636"], ["#8fd0e8", "#2f3a52"], ["#f7a07c", "#3b4660"], ["#c6b6f0", "#4a6fa5"], ["#ffffff", "#2f3a52"], ["#58a6a6", "#5a4636"], ["#e48aa5", "#3b4660"], ["#d9a52c", "#2f3a52"]];
+    const hairs = ["#2e2320", "#5a3a26", "#1d1a18", "#8a5a3c"];
+    ride.slot = i => new V3(cx + .16, ty, cz + .52 + i * .15);
+    ride.board = new V3(cx, ty, cz + .3); ride.exit = new V3(cx - .2, ty, cz + .32);
+    ride.exitPath = [new V3(cx - .42, ty, cz + .78), new V3(cx - .18, ty, cz + 1.42)];
+    const people = outfits.map(([body, legs], k) => { const n = makeNPC({ island:s.index, body, legs, hair:hairs[k % 4] }); n.kind = "rider"; n.body = body; n.hair = hairs[k % 4]; npcs.push(n); return n; });
+    people.forEach((n, k) => {
+      if (k < 6) { n.state = "queue"; ride.queue.push(n); n.pos = ride.slot(k).clone(); }
+      else { n.state = "ride"; n.g.visible = false; n.shadow.visible = false; const gd = wheel.gondolas[k * 3 % 16].userData.pass; gd.rider = n; gd.pg.visible = true; gd.bodyMat.color.set(n.body); gd.hairMat.color.set(n.hair); n.pos = ride.exit.clone(); }
+    });
+    wheel.onBottom = k => {
+      const gd = wheel.gondolas[k].userData.pass;
+      if (gd.rider) { const n = gd.rider; gd.rider = null; gd.pg.visible = false; n.g.visible = true; n.shadow.visible = true; n.state = "exit"; n.pos = ride.exit.clone(); n.path = [...ride.exitPath.map(v => v.clone())]; }
+      const first = ride.queue.shift();
+      if (first) { first.state = "board"; first.gd = gd; first.target = ride.board.clone(); }
+    };
+  }
+  function updateRide(dt) {
+    ride.queue.forEach((n, i) => { const sl = ride.slot(i); if (n.state === "queue") n.target = sl; });
+  }
   function updateNPCs(dt) {
     const t = state.time, still = state.reduced;
     for (const n of npcs) {
@@ -1689,6 +1740,19 @@ async function main() {
         n.armR.rotation.set(-1.25 + Math.sin(t * 1.3) * .2, 0, .1); n.armL.rotation.set(-1.1 + Math.sin(t * 1.3) * .2, 0, -.2);
         const bl = n.armR.userData.blades; if (bl) { bl[0].rotation.y = .3 + k * .25; bl[1].rotation.y = -.3 - k * .25; }
         n.head.rotation.x = -.2;
+      } else if (n.kind === "viewer") {
+        n.head.rotation.x = .25; n.armL.rotation.set(-1.0, 0, -.25); n.armR.rotation.set(-1.0, 0, .25); heading = n.face + Math.sin(t * .3) * .25;
+      } else if (n.kind === "rider") {
+        if (n.state === "ride") continue;
+        let tg = n.target;
+        if (n.state === "exit" && n.path) { tg = n.path[0]; if (!tg) { n.state = "queue"; ride.queue.push(n); n.path = null; tg = ride.slot(ride.queue.length - 1); } }
+        if (n.state === "queue" && !tg) tg = ride.slot(Math.max(0, ride.queue.indexOf(n)));
+        if (tg) { const d = new V3().subVectors(tg, n.pos).setY(0), len = d.length();
+          if (len > .02) { n.pos.addScaledVector(d.normalize(), Math.min(len, dt * .3)); walking = true; heading = Math.atan2(d.x, d.z); n.lastH = heading; }
+          else if (n.state === "exit") n.path.shift();
+          else if (n.state === "board") { n.state = "ride"; n.g.visible = false; n.shadow.visible = false; const gd = n.gd; gd.rider = n; gd.pg.visible = true; gd.bodyMat.color.set(n.body); gd.hairMat.color.set(n.hair); continue; } }
+        if (n.state === "queue" && !walking) { heading = Math.PI; n.head.rotation.x = -.55; } else n.head.rotation.x = 0;
+        n.armL.rotation.set(walking ? Math.sin(t * 9) * .4 : 0, 0, -.1); n.armR.rotation.set(walking ? -Math.sin(t * 9) * .4 : 0, 0, .1);
       } else if (n.kind === "sweeper") {
         n.t += dt * .12; const u = (Math.sin(n.t * Math.PI * 2) + 1) / 2; const prevPos = n.pos.clone(); n.pos.lerpVectors(n.a, n.b, u);
         const d = new V3().subVectors(n.pos, prevPos); walking = d.lengthSq() > 1e-8; if (walking) n.lastH = Math.atan2(d.x, d.z); heading = n.lastH || 0;
@@ -2301,6 +2365,7 @@ async function main() {
       <h2><span class="ib" style="--c:${s.color}">${s.no}</span>${esc(s.name)}</h2>
       <p>${esc(s.summary)}</p>
       <div class="kpis"><span><b>${cnt[2]}</b>已上線</span><span><b>${cnt[1]}</b>進行中</span><span><b>${cnt[0]}</b>規劃</span></div>
+      ${s.wheel ? `<p>摩天輪可以搭:轉到最低點的吊艙會停下來,乘客下車,排隊的人上車。現在有 ${wheel.gondolas.filter(g => g.userData.pass.rider).length} 個吊艙有人、${ride.queue.length} 人在排隊。</p>` : ""}
       <h3>島上的建物</h3>
       <ol class="list">${s.items.map((it, k) => `<li><button type="button" data-item="${it.id}"><span class="n">${k + 1}</span>
         <span>${esc(it.name)}<small>${esc(it.desc)}</small></span><span class="st s${it.stage}">${STAGES[it.stage]}</span></button></li>`).join("")}</ol>
@@ -2613,7 +2678,7 @@ async function main() {
       updatePods(dt); updateSchools(dt); updateHeli(dt); updateSplashes(dt); poseYuri(dt);
       checkFireworkClock(dt);
       spMat.uniforms.uTime.value = state.time; beam.rotation.y += dt * .7;
-      updateWheel(dt); updateMeeting(); updateNPCs(dt); updateFountain(dt);
+      updateWheel(dt); updateRide(dt); updateMeeting(); updateNPCs(dt); updateFountain(dt);
       bows.forEach(b => b.tails.forEach((t, k) => { t.rotation.z = Math.sin(state.time * 2.2 + b.phase + k * 1.3) * .14; t.rotation.x = Math.sin(state.time * 1.7 + b.phase) * .1; }));
       if (rockets.length || fw.live || flash.intensity) updateFireworks(dt);
   }
