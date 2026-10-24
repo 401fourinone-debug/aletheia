@@ -131,7 +131,7 @@ dl.kv dt { color:var(--muted); } dl.kv dd { margin:0; font-weight:700; }
 #logList time { font:12px/1.4 var(--mono); color:var(--muted); font-variant-numeric:tabular-nums; }
 #logList .tag { font-size:10px; font-weight:700; padding:0 6px; border-radius:6px; background:var(--soft); white-space:nowrap; }
 #logList .t-arrive { background:#e6f0ec; color:#2f6b4f; } #logList .t-handoff { background:#fde9df; color:#9a3b1c; }
-#logList .t-depart { background:#ecebf6; color:#4b4f8a; } #logList .t-commit { background:var(--yellow); color:var(--ink); }
+#logList .t-stop { background:#fff1c2; color:#7a5a00; } #logList .t-depart { background:#ecebf6; color:#4b4f8a; } #logList .t-commit { background:var(--yellow); color:var(--ink); }
 
 /* HUD */
 #hud { left:50%; transform:translateX(-50%); bottom:calc(16px + env(safe-area-inset-bottom, 0px)); display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius:16px; }
@@ -272,7 +272,7 @@ dl.kv dt { color:var(--muted); } dl.kv dd { margin:0; font-weight:700; }
     <ol>
       <li><div><b>拖曳旋轉,滾輪或雙指縮放</b><small>按「全景」回到整座城市;方向鍵也能轉。</small></div></li>
       <li><div><b>點島、建物或小人</b><small>左邊會打開卡片:數字、狀態、證據有沒有重現。</small></div></li>
-      <li><div><b>打開「協作線」,或切到夜晚</b><small>小人搬著題目、答案、分數在島之間走。夜裡島緣燈條亮起,渡輪載訪客到碼頭上岸參與評測。</small></div></li>
+      <li><div><b>打開「協作線」,或切到夜晚</b><small>小人搬著題目、答案、分數在島之間走。訪客從碼頭上岸,經協議本部、題庫走到實驗室親自測一次;夜裡燈塔光束繞著群島轉。</small></div></li>
     </ol>
     <button class="btn" id="introGo" type="button" aria-pressed="true">開始逛</button>
   </div>
@@ -287,7 +287,7 @@ dl.kv dt { color:var(--muted); } dl.kv dd { margin:0; font-weight:700; }
 const DATA = {
   city: "Aletheia 真實島",
   islands: [
-    { id:"hq", name:"協議本部", color:"#db6a41", q:0, r:0, ground:"brick", tree:"round",
+    { id:"hq", name:"協議本部", color:"#db6a41", q:0, r:0, lift:.42, ground:"brick", tree:"round",
       summary:"SKILL.md 的家。一段可以直接貼進任何 AI 的規則,v2.4 全文 11,651 字、16 條原則。",
       items:[
         { id:"hq-1", name:"協議全文", model:"hall", stage:2, desc:"唯一的正式版本,貼進系統提示、自訂指令或第一則訊息就全程啟用。", facts:["v2.4 全文 11,651 字","16 條原則:11 條保護、5 條合作","CC BY 4.0,可商用"] },
@@ -414,12 +414,17 @@ const DATA = {
     { id:"f-mistake",from:"report", to:"memo",   cargo:"錯誤紀錄", glyph:"錯", role:"編輯",   level:"official", desc:"做錯的事寫成紀念碑,不刪。" },
     { id:"f-counter",from:"port",   to:"bank",   cargo:"反例",     glyph:"例", role:"讀者",   level:"thematic", desc:"使用者回報的反例,採納後變成新題目。不定期才有。" },
     { id:"f-claude", from:"todo",   to:"lab",    cargo:"Claude 測試", glyph:"測", role:"工程師", level:"pending", desc:"還沒開始:要在 Claude 上重跑整套測評。" },
-    { id:"f-visit",  from:"harbor", to:"lab",    cargo:"自己的題目", glyph:"試", role:"訪客", level:"thematic", desc:"訪客搭船上岸,帶著自己的問題到實驗室,用「有協議」和「沒協議」親自比一次。" },
+    { id:"f-visit",  from:"harbor", to:"lab",    cargo:"自己的題目", glyph:"試", role:"訪客", level:"thematic", count:9,
+      via:[{ id:"hq", act:"領取協議全文" }, { id:"bank", act:"挑一題自己想問的題目" }], arriveAct:"用有協議、沒協議親自比一次",
+      desc:"參與測試的路線:訪客上岸後先到協議本部拿協議,再到題庫挑題目,最後在實驗室親自比一次有協議和沒協議的回答。" },
     { id:"f-report", from:"harbor", to:"port",   cargo:"反例回報", glyph:"回", role:"訪客", level:"thematic", desc:"試出「套了協議反而變糟」的訪客,把結果照回報格式交給反例港。" }
   ],
   harbor: { island:"port", angle:180, length:2.6, name:"訪客碼頭", color:"#2f7fa8",
     desc:"任何人都能上島參與評測。findings 附了一個 30 秒的實驗:把一段藏了指令的文字貼給你平常用的 AI,看它會不會告訴你。",
     facts:["30 秒就能自己驗證","短版提示命中 50%,完整版 100%","回報格式 4 個欄位,幫助程度 1–5 分"] },
+  beacon: { name:"公開燈塔", color:"#e8c25a",
+    desc:"每一版協議都公開測評,包括表現變差的部分。燈塔立在碼頭外,替靠岸的訪客照路。",
+    facts:["每一版都做有協議與沒協議的對照","變差的題目公開,列為下一版優先修改","原始數據全部 CC BY 4.0"] },
   dayCycle: [
     { start:0,    label:"記錯誤、排待辦", items:["m1","m2","m3","m4","m5","m6","m7","m8","t-claude","t-judge","t-more","t-gap","t-human","t-alert"] },
     { start:360,  label:"寫協議",         items:["hq-1","hq-2","hq-3","hq-4","hq-5"] },
@@ -492,7 +497,8 @@ async function main() {
   // ---------- 資料索引 ----------
   const islands = DATA.islands.map((d, i) => {
     const x = Math.sqrt(3) * SPACING * (d.q + d.r / 2), z = 1.5 * SPACING * d.r;
-    return { ...d, index:i, no:String(i + 1).padStart(2, "0"), pos:new V3(x, TOP, z) };
+    const top = TOP + (d.lift || 0);
+    return { ...d, index:i, top, no:String(i + 1).padStart(2, "0"), pos:new V3(x, top, z) };
   });
   const islandById = Object.fromEntries(islands.map(s => [s.id, s]));
   const items = [], itemById = {};
@@ -787,63 +793,67 @@ async function main() {
   const lampSpots = [], bulbs = [], stripMats = [], strips = [];
 
   for (const s of islands) {
-    const { x, z } = s.pos;
-    const topGeo = hexGeo(R - 0.05).translate(x, TOP, z);
+    const { x, z } = s.pos, ty = s.top;
+    const topGeo = hexGeo(R - 0.05).translate(x, ty, z);
     const pos = topGeo.attributes.position, uv = topGeo.attributes.uv;
     for (let i = 0; i < pos.count; i++) uv.setXY(i, pos.getX(i) / 2.2, pos.getZ(i) / 2.2);
     const top = new THREE.Mesh(topGeo, new THREE.MeshStandardMaterial({ map:groundTexture(s.ground, groundBases[s.ground], s.color), roughness:.92 }));
     top.receiveShadow = true; top.userData.island = s.index; scene.add(top); islandTops.push(top);
 
     const ring = (geo, mat, y) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.receiveShadow = true; scene.add(m); return m; };
-    ring(ringGeo(PATH_R - .14, PATH_R + .14), pathMat, TOP + .003);
-    ring(ringGeo(R - .13, R - .02), curbMat, TOP + .005);
+    ring(ringGeo(PATH_R - .14, PATH_R + .14), pathMat, ty + .003);
+    ring(ringGeo(R - .13, R - .02), curbMat, ty + .005);
     ring(ringGeo(R, R + .7), shallowMat, WATER_Y + .01);
     ring(ringGeo(R, R + .16), foamMat, WATER_Y + .02);
 
-    const wallH = TOP - WATER_Y + .5;
+    const wallH = ty - WATER_Y + .5;
     const wall = new THREE.CylinderGeometry(R - .02, R + .06, wallH, 6, 3, true);
     const wc = [], cTop = new Col("#e7d8c2"), cBot = new Col("#8fc4cb"), tmp = new Col();
     const wp = wall.attributes.position;
     for (let i = 0; i < wp.count; i++) { const t = (wp.getY(i) + wallH / 2) / wallH; tmp.copy(cBot).lerp(cTop, Math.pow(t, 1.6)); wc.push(tmp.r, tmp.g, tmp.b); }
     wall.setAttribute("color", new THREE.Float32BufferAttribute(wc, 3));
-    const wm = new THREE.Mesh(wall, sideMat); wm.position.set(x, TOP - .16 - wallH / 2, z); wm.receiveShadow = true; scene.add(wm);
+    const wm = new THREE.Mesh(wall, sideMat); wm.position.set(x, ty - .16 - wallH / 2, z); wm.receiveShadow = true; scene.add(wm);
     const band = new THREE.Mesh(new THREE.CylinderGeometry(R, R, .16, 6, 1, true), new THREE.MeshStandardMaterial({ map:bandTexture(s.color), roughness:.85 }));
-    band.position.set(x, TOP - .08, z); scene.add(band);
+    band.position.set(x, ty - .08, z); scene.add(band);
+    if (s.lift) for (let k = 0; k < 3; k++) {
+      const st = new THREE.Mesh(new THREE.CylinderGeometry(R + .05 + k * .05, R + .05 + k * .05, .07, 6), new THREE.MeshStandardMaterial({ color:["#e9dccb", "#dccdb9", "#cfbfa9"][k], roughness:.9 }));
+      st.position.set(x, ty - .2 - k * .12, z); st.receiveShadow = st.castShadow = true; scene.add(st);
+    }
     // 夜間燈條:島頂邊緣一圈、崖邊一圈,顏色取島的主色
     const glowCol = new Col(s.color).lerp(new Col("#ffffff"), .12).multiplyScalar(1.35);
     const stripMat = new THREE.MeshBasicMaterial({ color:glowCol, toneMapped:false, transparent:true, opacity:0, depthWrite:false });
     stripMats.push(stripMat);
-    const strip1 = new THREE.Mesh(ringGeo(R - .036, R + .006), stripMat); strip1.position.set(x, TOP + .009, z);
-    const strip2 = new THREE.Mesh(new THREE.CylinderGeometry(R + .006, R + .006, .03, 6, 1, true), stripMat); strip2.position.set(x, TOP - .03, z);
-    const strip3 = new THREE.Mesh(new THREE.CylinderGeometry(R + .03, R + .03, .025, 6, 1, true), stripMat); strip3.position.set(x, TOP - .14, z);
+    const strip1 = new THREE.Mesh(ringGeo(R - .036, R + .006), stripMat); strip1.position.set(x, ty + .009, z);
+    const strip2 = new THREE.Mesh(new THREE.CylinderGeometry(R + .006, R + .006, .03, 6, 1, true), stripMat); strip2.position.set(x, ty - .03, z);
+    const strip3 = new THREE.Mesh(new THREE.CylinderGeometry(R + .03, R + .03, .025, 6, 1, true), stripMat); strip3.position.set(x, ty - .14, z);
     for (const m of [strip1, strip2, strip3]) { m.renderOrder = 3; m.visible = false; scene.add(m); strips.push(m); }
 
     // 外圈:路燈、串燈、灌木、大樹
     const own = { type:"island", i:s.index };
     for (let k = 0; k < 6; k++) {
       const a = Math.PI / 6 + k * Math.PI / 3, lx = x + Math.cos(a) * 1.9, lz = z + Math.sin(a) * 1.9;
-      const p = maker(kit, baseM(lx, TOP, lz), own);
+      const p = maker(kit, baseM(lx, ty, lz), own);
       p("cyl",0,.22,0,.03,.44,.03,C.ink); p("glowsphere",0,.47,0,.09,.09,.09,C.lamp); p("cyl",0,.02,0,.08,.04,.08,C.ink);
-      lampSpots.push(new V3(lx, TOP + .012, lz));
+      lampSpots.push(new V3(lx, ty + .012, lz));
       const a2 = a + Math.PI / 3, rr = R - .06;
       for (let j = 0; j < 9; j++) {
         const t = (j + .5) / 9;
-        bulbs.push({ p:new V3(x + (Math.cos(a) * (1 - t) + Math.cos(a2) * t) * rr, TOP + .035, z + (Math.sin(a) * (1 - t) + Math.sin(a2) * t) * rr), g:s.index, j:k * 9 + j });
+        bulbs.push({ p:new V3(x + (Math.cos(a) * (1 - t) + Math.cos(a2) * t) * rr, ty + .035, z + (Math.sin(a) * (1 - t) + Math.sin(a2) * t) * rr), g:s.index, j:k * 9 + j });
       }
       for (const t of [.3, .7]) {
         const a3 = a + t * Math.PI / 3, rr2 = 1.4 / Math.cos(a3 - (a + Math.PI / 6));
-        const sp = maker(smallKit, baseM(x + Math.cos(a3) * rr2, TOP, z + Math.sin(a3) * rr2, .9 + rnd() * .3), own);
+        const sp = maker(smallKit, baseM(x + Math.cos(a3) * rr2, ty, z + Math.sin(a3) * rr2, .9 + rnd() * .3), own);
         if (rnd() > .5) { sp("cyl",0,.05,0,.12,.1,.12,C.coral); sp("ico",0,.15,0,.16,.14,.16,C.leaf2); }
         else { sp("ico",0,.07,0,.2,.15,.2,C.leaf3); sp("sphere",.04,.13,.03,.05,.05,.05,[C.pink,C.yellow,C.cream][Math.floor(rnd() * 3)]); }
       }
     }
     for (const deg of [210, 240, 270, 300, 330]) {
       const a = deg * Math.PI / 180, rr = deg % 60 === 30 ? 1.42 : 1.36;
-      tree(maker(kit, baseM(x + Math.cos(a) * rr, TOP, z + Math.sin(a) * rr, .62 + rnd() * .18, rnd() * 6), own), s.tree, rnd);
+      tree(maker(kit, baseM(x + Math.cos(a) * rr, ty, z + Math.sin(a) * rr, .62 + rnd() * .18, rnd() * 6), own), s.tree, rnd);
     }
     // 長椅
     for (const deg of [60, 120]) {
-      const a = deg * Math.PI / 180, bp = maker(smallKit, baseM(x + Math.cos(a) * 1.48, TOP, z + Math.sin(a) * 1.48, .8, -a + Math.PI / 2), own);
+      const a = deg * Math.PI / 180, bp = maker(smallKit, baseM(x + Math.cos(a) * 1.48, ty, z + Math.sin(a) * 1.48, .8, -a + Math.PI / 2), own);
       bp("box",0,.09,0,.36,.03,.12,C.wood); bp("box",0,.16,-.05,.36,.1,.02,C.wood); bp("box",-.15,.045,0,.03,.09,.1,C.ink); bp("box",.15,.045,0,.03,.09,.1,C.ink);
     }
 
@@ -859,11 +869,11 @@ async function main() {
     }
     pts.sort((a, b) => Math.hypot(a.x, a.z - .25) - Math.hypot(b.x, b.z - .25));
     s.items.forEach((it, k) => {
-      const main = k === 0, sc = main ? 1.15 : cell * .9;
+      const main = k === 0, sc = main ? (s.lift ? 1.32 : 1.15) : cell * .9;
       const sp = main ? { x:0, z:-.58 } : pts[k - 1] || { x:0, z:.9 };
-      it.pos = new V3(x + sp.x, TOP, z + sp.z); it.scale = sc; it.top = TOP + sc * 1.2;
+      it.pos = new V3(x + sp.x, ty, z + sp.z); it.scale = sc; it.top = ty + sc * 1.2;
       const r = mulberry32(k * 131 + s.index * 7919);
-      const p = maker(kit, baseM(it.pos.x, TOP, it.pos.z, sc, main ? 0 : (r() - .5) * .5), { type:"item", id:it.id }, r);
+      const p = maker(kit, baseM(it.pos.x, ty, it.pos.z, sc, main ? 0 : (r() - .5) * .5), { type:"item", id:it.id }, r);
       (MODELS[it.model] || MODELS.house)(p, s.color, r);
     });
 
@@ -872,7 +882,7 @@ async function main() {
     el.type = "button"; el.className = "ilabel"; el.style.setProperty("--c", s.color);
     el.innerHTML = `<em>${s.no}</em><span>${esc(s.name)}</span>`;
     el.addEventListener("click", ev => { ev.stopPropagation(); selectIsland(s.index); });
-    const lab = new CSS2DObject(el); lab.position.set(x, TOP - .05, z + INR + .1); scene.add(lab);
+    const lab = new CSS2DObject(el); lab.position.set(x, ty - .05, z + INR + .1); scene.add(lab);
     s.label = el;
   }
 
@@ -884,24 +894,24 @@ async function main() {
   }
   const bridgePts = {};
   for (const [i, j] of neighbors) {
-    const A = islands[i].pos, B = islands[j].pos, dir = new V3().subVectors(B, A).setY(0).normalize();
+    const A = islands[i].pos, B = islands[j].pos, dir = new V3().subVectors(B, A).setY(0).normalize(), tA = islands[i].top, tB = islands[j].top;
     const p0 = A.clone().addScaledVector(dir, MID_R), p1 = B.clone().addScaledVector(dir, -MID_R);
     const arc = .04 + rnd() * .06, ry = Math.atan2(dir.x, dir.z), span = p0.distanceTo(p1), pts = [];
     for (let k = 0; k < 9; k++) {
-      const t = (k + .5) / 9, y = TOP + .02 + Math.sin(t * Math.PI) * arc;
+      const t = (k + .5) / 9, y = tA + (tB - tA) * t + .02 + Math.sin(t * Math.PI) * arc;
       const c = p0.clone().lerp(p1, t); c.y = y; pts.push(c.clone().setY(y + .02));
-      const slope = Math.cos(t * Math.PI) * Math.PI * arc / span;
+      const slope = Math.atan(Math.cos(t * Math.PI) * Math.PI * arc / span + (tB - tA) / span);
       maker(kit, new THREE.Matrix4(), null)("box", c.x, y, c.z, .34, .035, span / 9 * .88, C.wood, ry, -slope);
     }
     for (const s of [-1, 1]) for (const t of [0, 1]) {
       const c = p0.clone().lerp(p1, t), off = new V3(dir.z, 0, -dir.x).multiplyScalar(s * .19);
-      maker(kit, new THREE.Matrix4(), null)("cyl", c.x + off.x, TOP + .1, c.z + off.z, .04, .2, .04, C.wood);
+      maker(kit, new THREE.Matrix4(), null)("cyl", c.x + off.x, (t ? tB : tA) + .1, c.z + off.z, .04, .2, .04, C.wood);
     }
     bridgePts[i + "-" + j] = pts;
   }
 
   // ---------- 訪客碼頭 ----------
-  const pierY = TOP - .02, pierRy = Math.atan2(hDir.x, hDir.z), hOwn = { type:"harbor" };
+  const pierY = hIsl.top - .02, pierRy = Math.atan2(hDir.x, hDir.z), hOwn = { type:"harbor" };
   {
     const L = hb.length, n = 16, wp = maker(kit, new THREE.Matrix4(), hOwn);
     for (let k = 0; k < n; k++) { const c = harbor.root.clone().addScaledVector(hDir, (k + .5) / n * L);
@@ -938,6 +948,30 @@ async function main() {
     harbor.label = el;
   }
 
+  // ---------- 公開燈塔:碼頭外的礁石小島 ----------
+  const bk = DATA.beacon, bOwn = { type:"beacon" };
+  const beacon = { ...bk, pos:harbor.tip.clone().addScaledVector(hDir, 1.2).addScaledVector(hPerp, 2.0).setY(WATER_Y) };
+  {
+    const b = beacon.pos, rp = maker(kit, baseM(b.x, WATER_Y, b.z), bOwn);
+    rp("ico", 0, .1, 0, 1.5, .6, 1.3, "#b8a990"); rp("ico", .35, .15, .25, .7, .5, .6, "#a89a82"); rp("ico", -.4, .08, -.2, .6, .4, .5, "#c2b49b");
+    rp("cyl", 0, .42, 0, .9, .14, .9, C.stone);
+    MODELS.lighthouse(maker(kit, baseM(b.x, WATER_Y + .48, b.z, 1.75), bOwn), C.coral, rnd);
+    beacon.lamp = new V3(b.x, WATER_Y + .48 + 1.36 * 1.75, b.z);
+    lampSpots.push(new V3(b.x, WATER_Y + .5, b.z));
+    const el = document.createElement("button"); el.type = "button"; el.className = "ilabel"; el.style.setProperty("--c", bk.color);
+    el.innerHTML = `<em>燈</em><span>${esc(bk.name)}</span>`;
+    el.addEventListener("click", ev => { ev.stopPropagation(); selectBeacon(); });
+    const lab = new CSS2DObject(el); lab.position.set(b.x, beacon.lamp.y + .75, b.z); scene.add(lab); beacon.label = el;
+  }
+  const beamMat = new THREE.ShaderMaterial({ transparent:true, depthWrite:false, side:THREE.DoubleSide, blending:THREE.AdditiveBlending,
+    uniforms:{ uOpacity:{ value:0 }, uColor:{ value:new Col("#fff1c4") } },
+    vertexShader:`varying float vD; void main(){ vD = length(position) / 7.; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
+    fragmentShader:`uniform float uOpacity; uniform vec3 uColor; varying float vD; void main(){ gl_FragColor = vec4(uColor, uOpacity * pow(1. - clamp(vD, 0., 1.), 1.6)); }` });
+  const beamGeo = new THREE.ConeGeometry(.85, 7, 24, 1, true).translate(0, -3.5, 0).rotateZ(Math.PI / 2);
+  const beam = new THREE.Group(); beam.position.copy(beacon.lamp);
+  for (const r of [0, Math.PI]) { const m = new THREE.Mesh(beamGeo, beamMat); m.rotation.y = r; m.renderOrder = 5; beam.add(m); }
+  beam.visible = false; scene.add(beam);
+
   // ---------- 行人路網(每島 12 節點 + 橋)與 Dijkstra ----------
   const nodes = [], adj = [];
   const addNode = v => { nodes.push(v); adj.push([]); return nodes.length - 1; };
@@ -945,7 +979,7 @@ async function main() {
   const ringNodes = islands.map(s => {
     const ids = [];
     for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6, r = k % 2 === 0 ? MID_R : PATH_R;
-      ids.push(addNode(new V3(s.pos.x + Math.cos(a) * r, TOP + .01, s.pos.z + Math.sin(a) * r))); }
+      ids.push(addNode(new V3(s.pos.x + Math.cos(a) * r, s.top + .01, s.pos.z + Math.sin(a) * r))); }
     for (let k = 0; k < 12; k++) link(ids[k], ids[(k + 1) % 12]);
     return ids;
   });
@@ -976,10 +1010,15 @@ async function main() {
       const nd = addNode(v); link(prev, nd); prev = nd; pierNodes.push(nd); }
   }
   const endNode = (s, other) => s.isHarbor ? pierNodes[pierNodes.length - 1] : ringNodes[s.index][other.pos.x >= s.pos.x ? 11 : 7];
+  // 有 via 的路線(訪客參與測試)依序經過每一站,停在該島正面的節點
   for (const f of flows) {
-    f.path = dijkstra(endNode(f.A, f.B), endNode(f.B, f.A));
+    f.viaIsl = (f.via || []).map(v => ({ ...v, s:islandById[v.id] }));
+    const seq = [endNode(f.A, f.viaIsl[0]?.s || f.B), ...f.viaIsl.map(v => ringNodes[v.s.index][3]), endNode(f.B, f.viaIsl.at(-1)?.s || f.A)];
+    f.path = []; const stopIdx = [];
+    for (let k = 1; k < seq.length; k++) { const seg = dijkstra(seq[k - 1], seq[k]); if (f.path.length) seg.shift(); f.path.push(...seg); if (k < seq.length - 1) stopIdx.push(f.path.length - 1); }
     f.cum = [0]; for (let i = 1; i < f.path.length; i++) f.cum.push(f.cum[i - 1] + f.path[i].distanceTo(f.path[i - 1]));
-    f.L = f.cum[f.cum.length - 1];
+    f.L = f.cum[f.cum.length - 1]; f.stops = stopIdx.map(i => f.cum[i]);
+    f.route = [f.A, ...f.viaIsl.map(v => v.s), f.B];
   }
 
   // ---------- 協作線 ----------
@@ -1007,7 +1046,7 @@ async function main() {
   // ---------- 小人 ----------
   const walkers = [];
   for (const f of flows) {
-    const n = f.level === "official" ? 7 : f.level === "thematic" ? 5 : 4;
+    const n = f.count || (f.level === "official" ? 7 : f.level === "thematic" ? 5 : 4);
     for (let k = 0; k < n; k++) walkers.push({ f:f.index, role:f.role, s:rnd() * f.L, dir:rnd() > .5 ? 1 : -1, speed:.32 + rnd() * .08,
       wait:0, lat:.05 + rnd() * .05, phase:rnd(), pos:new V3(), head:0, name:null });
   }
@@ -1081,23 +1120,27 @@ async function main() {
     for (const m of Object.values(walkerMeshes)) m.instanceMatrix.needsUpdate = true;
   }
   let lastLog = 0;
-  function walkerEvent(w, type) {
+  function walkerEvent(w, type, k) {
     const f = flows[w.f], now = performance.now(), filter = $("#logFilter").value;
     if (filter && filter !== f.id) return;
     if (!filter && now - lastLog < 1400) return;
     lastLog = now;
-    const text = type === "arrive" ? `${w.role} 抵達 ${f.B.name}`
-      : type === "handoff" ? `${f.B.name} 收下${f.cargo}`
+    const text = type === "stop" ? `${w.role} 在 ${f.viaIsl[k].s.name}${f.viaIsl[k].act}`
+      : type === "arrive" ? `${w.role} 抵達 ${f.B.name}`
+      : type === "handoff" ? (f.arriveAct ? `${w.role} 在 ${f.B.name}${f.arriveAct}` : `${f.B.name} 收下${f.cargo}`)
       : `${w.role} 從 ${f.A.name} 出發,帶著${f.cargo}`;
     addLog(type, text, f.id);
   }
   function updateWalkers(dt) {
     for (const w of walkers) {
-      if (w.wait > 0) { w.wait -= dt; if (w.wait <= 0) { if (w.dir > 0) walkerEvent(w, "handoff"); w.dir *= -1; if (w.dir > 0) walkerEvent(w, "depart"); } continue; }
-      w.s += w.dir * w.speed * dt;
-      const L = flows[w.f].L;
-      if (w.s >= L) { w.s = L; w.wait = 1.4; walkerEvent(w, "arrive"); }
-      else if (w.s <= 0) { w.s = 0; w.wait = 1.4; }
+      const f = flows[w.f], L = f.L;
+      if (w.wait > 0) { w.wait -= dt;
+        if (w.wait <= 0) { if (w.s >= L) { walkerEvent(w, "handoff"); w.dir = -1; } else if (w.s <= 0) { w.dir = 1; walkerEvent(w, "depart"); } }
+        continue; }
+      const prev = w.s; w.s += w.dir * w.speed * dt;
+      if (w.s >= L) { w.s = L; w.wait = 1.4; walkerEvent(w, "arrive"); continue; }
+      if (w.s <= 0) { w.s = 0; w.wait = 1.4; continue; }
+      if (w.dir > 0) for (let k = 0; k < f.stops.length; k++) if (prev < f.stops[k] && w.s >= f.stops[k]) { w.s = f.stops[k]; w.wait = 1.1; walkerEvent(w, "stop", k); break; }
     }
   }
 
@@ -1118,16 +1161,36 @@ async function main() {
   haloMesh.renderOrder = 4; haloMesh.visible = false; scene.add(bulbMesh, haloMesh);
   let bulbKey = "";
   function updateBulbs() {
-    const night = state.night || 0, step = state.reduced ? 0 : Math.floor(state.time * 6), key = night.toFixed(2) + ":" + step;
+    const night = state.night || 0, glow = Math.max(night, .62), step = state.reduced ? 0 : Math.floor(state.time * 6), key = night.toFixed(2) + ":" + step;
     if (key === bulbKey) return; bulbKey = key;
     bulbs.forEach((b, i) => {
       const lit = state.reduced || (b.j + step) % 4 !== 0;
       _b1.copy(BULB_PAL[(Math.floor(b.j / 3) + (b.g + 5)) % 5]); if (!lit) _b1.multiplyScalar(.18);
-      _b2.copy(BULB_DAY).lerp(_b1, night); bulbMesh.setColorAt(i, _b2); haloMesh.setColorAt(i, _b1);
+      _b2.copy(BULB_DAY).lerp(_b1, glow); bulbMesh.setColorAt(i, _b2); haloMesh.setColorAt(i, _b1);
     });
     bulbMesh.instanceColor.needsUpdate = true; haloMesh.instanceColor.needsUpdate = true;
-    haloMat.opacity = night * .45; haloMesh.visible = night > .02;
+    haloMat.opacity = .12 + night * .33; haloMesh.visible = true;
   }
+
+  // ---------- 閃光:白天與夜裡都會在島緣、屋頂、水面一閃一閃 ----------
+  const spk = [];
+  bulbs.forEach((b, i) => { if (i % 3 === 0) spk.push([b.p.x, b.p.y + .06 + fr0() * .2, b.p.z]); });
+  items.forEach(it => spk.push([it.pos.x, it.top + .08, it.pos.z]));
+  for (let i = 0; i < 90; i++) { const a = fr0() * Math.PI * 2, d = 3 + fr0() * 9; spk.push([center.x + Math.cos(a) * d * 1.3, WATER_Y + .04, center.z + Math.sin(a) * d]); }
+  spk.push([beacon.lamp.x, beacon.lamp.y + .1, beacon.lamp.z]);
+  function fr0() { return rnd(); }
+  const spGeo = new THREE.BufferGeometry();
+  spGeo.setAttribute("position", new THREE.Float32BufferAttribute(spk.flat(), 3));
+  spGeo.setAttribute("aPhase", new THREE.Float32BufferAttribute(spk.map(() => rnd() * 6.28), 1));
+  spGeo.setAttribute("aSpeed", new THREE.Float32BufferAttribute(spk.map(() => .8 + rnd() * 1.6), 1));
+  const spMat = new THREE.ShaderMaterial({ transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, uniforms:{ uTime:{ value:0 }, uScale:{ value:1 } },
+    vertexShader:`attribute float aPhase, aSpeed; uniform float uTime, uScale; varying float vA;
+      void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.); vA = pow(max(sin(uTime * aSpeed + aPhase), 0.), 16.);
+        gl_PointSize = vA > .01 ? .32 * uScale / -mv.z * (.5 + vA) : 0.; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader:`varying float vA; void main(){ vec2 p = gl_PointCoord - .5;
+      float c = max(exp(-abs(p.x) * 34.) * exp(-abs(p.y) * 5.), exp(-abs(p.y) * 34.) * exp(-abs(p.x) * 5.)) + exp(-dot(p, p) * 90.);
+      gl_FragColor = vec4(vec3(1., .96, .82) * 1.4, clamp(c, 0., 1.) * vA); }` });
+  const sparkles = new THREE.Points(spGeo, spMat); sparkles.frustumCulled = false; sparkles.renderOrder = 7; scene.add(sparkles);
 
   // ---------- 協議本部定時煙火 ----------
   // 從鐘塔頂升空,在島的上空炸開。夜裡每個整點兩發,21:00 與 00:00 連放六發;白天每三小時一發
@@ -1146,7 +1209,7 @@ async function main() {
       float core = smoothstep(.5, 0., r); gl_FragColor = vec4(vC * (.7 + core * 1.3), vA * core); }` });
   const fwPoints = new THREE.Points(fwGeo, fwMat); fwPoints.frustumCulled = false; fwPoints.renderOrder = 6; scene.add(fwPoints);
   const flash = new THREE.PointLight(0xffd25e, 0, 16, 1.6); scene.add(flash);
-  const hqMain = itemById["hq-1"], fwOrigin = new V3(hqMain.pos.x, TOP + hqMain.scale * 1.45, hqMain.pos.z - .16 * hqMain.scale);
+  const hqMain = itemById["hq-1"], fwOrigin = new V3(hqMain.pos.x, hqMain.pos.y + hqMain.scale * 1.45, hqMain.pos.z - .16 * hqMain.scale);
   const rockets = [], fr = mulberry32(2026);
   function fwSpawn(p, vx, vy, vz, c, life, size, drag, grav) {
     const i = fw.cursor; fw.cursor = (fw.cursor + 1) % FW_MAX;
@@ -1362,7 +1425,8 @@ async function main() {
     const dir = new V3(Math.cos(az) * Math.cos(el), Math.sin(el), .55 * Math.cos(el) + .35).normalize();
     sun.position.copy(center).addScaledVector(dir, 40); sky.material.uniforms.uSunDir.value.copy(dir);
     glowMat.emissiveIntensity = night * 3.2; poolMat.opacity = night * .55; state.night = night;
-    stripMats.forEach(m => m.opacity = night * .95); strips.forEach(m => m.visible = night > .02);
+    stripMats.forEach(m => m.opacity = Math.max(night, .5) * .95); strips.forEach(m => m.visible = true);
+    beamMat.uniforms.uOpacity.value = night * .3; beam.visible = night > .05;
     const hh = Math.floor(m / 60), mm = Math.floor(m % 60);
     $("#clock").textContent = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
     let seg = 0; DATA.dayCycle.forEach((d, k) => { if (m >= d.start) seg = k; });
@@ -1438,10 +1502,10 @@ async function main() {
     cardBody.querySelectorAll("[data-flow]").forEach(b => b.addEventListener("click", () => selectFlow(+b.dataset.flow)));
     cardBody.querySelectorAll("[data-harbor]").forEach(b => b.addEventListener("click", selectHarbor));
     cardBody.querySelectorAll("[data-fw]").forEach(b => b.addEventListener("click", () => {
-      focus(new V3(fwOrigin.x, TOP + 3.4, fwOrigin.z), [3.4, 4.4, 11]); launchFirework(); setTimeout(() => launchFirework(), 350); }));
+      focus(new V3(fwOrigin.x, hqMain.pos.y + 3.4, fwOrigin.z), [3.4, 4.4, 11]); launchFirework(); setTimeout(() => launchFirework(), 350); }));
   }
-  const flowsOf = s => flows.filter(f => f.A === s || f.B === s);
-  const flowChip = f => `<button class="chip" type="button" data-flow="${f.index}" style="--c:${f.B.color}"><i></i>${esc(f.A.name)} → ${esc(f.B.name)} · ${esc(f.cargo)}</button>`;
+  const flowsOf = s => flows.filter(f => f.route.includes(s));
+  const flowChip = f => `<button class="chip" type="button" data-flow="${f.index}" style="--c:${f.B.color}"><i></i>${f.route.map(r => esc(r.name)).join(" → ")} · ${esc(f.cargo)}</button>`;
   const islandChip = s => s.isHarbor ? `<button class="chip" type="button" data-harbor style="--c:${s.color}"><i></i>⚓ ${esc(s.name)}</button>`
     : `<button class="chip" type="button" data-island="${s.index}" style="--c:${s.color}"><i></i>${s.no} ${esc(s.name)}</button>`;
   function harborCard() {
@@ -1494,8 +1558,10 @@ async function main() {
   function flowCard(f) {
     const n = walkers.filter(w => w.f === f.index).length;
     return `<div class="eyebrow">協作線 · ${LEVELS[f.level]}</div>
-      <h2>${esc(f.A.name)} → ${esc(f.B.name)}</h2><p>${esc(f.desc)}</p>
-      <div class="route">${islandChip(f.A)}<span class="ln ${f.level}"></span>${islandChip(f.B)}</div>
+      <h2>${f.route.map(r => esc(r.name)).join(" → ")}</h2><p>${esc(f.desc)}</p>
+      ${f.viaIsl.length ? `<ol class="list">${f.route.map((r, k) => `<li><button type="button" ${r.isHarbor ? "data-harbor" : `data-island="${r.index}"`}><span class="n" style="background:${r.color}">${k + 1}</span>
+        <span>${esc(r.name)}<small>${k === 0 ? "搭渡輪上岸" : k === f.route.length - 1 ? esc(f.arriveAct || "抵達") : esc(f.viaIsl[k - 1].act)}</small></span><span></span></button></li>`).join("")}</ol>`
+        : `<div class="route">${islandChip(f.A)}<span class="ln ${f.level}"></span>${islandChip(f.B)}</div>`}
       <dl class="kv"><dt>搬運物</dt><dd>${esc(f.cargo)}</dd><dt>走路的角色</dt><dd>${esc(f.role)}</dd>
       <dt>人數</dt><dd>${n} 人來回</dd><dt>路線長度</dt><dd>${f.L.toFixed(1)} 格</dd>
       <dt>證據等級</dt><dd>${LEVELS[f.level]}(${{ official:"實線", thematic:"虛線", pending:"點線" }[f.level]})</dd></dl>`;
@@ -1504,7 +1570,7 @@ async function main() {
     const f = flows[w.f], going = w.dir > 0;
     return `<div class="eyebrow">小人 · ${esc(w.role)}</div>
       <h2>${going ? `正在搬${esc(f.cargo)}` : "回程中"}</h2>
-      <p>${going ? `從 ${esc(f.A.name)} 走向 ${esc(f.B.name)}。` : `把${esc(f.cargo)}交給 ${esc(f.B.name)} 之後,走回 ${esc(f.A.name)} 拿下一份。`}</p>
+      <p>${going ? `從 ${f.route.map(r => esc(r.name)).join(" 經 ").replace(/ 經 ([^ ]+)$/, " 走向 $1")}。` : `把${esc(f.cargo)}交給 ${esc(f.B.name)} 之後,走回 ${esc(f.A.name)} 拿下一份。`}</p>
       <p>${esc(f.desc)}</p><div class="chips">${flowChip(f)}</div>`;
   }
 
@@ -1525,7 +1591,7 @@ async function main() {
 
   // ---------- 選取 ----------
   function showFlows(list) { const vis = new Set(list.map(f => f.index)); flows.forEach(f => f.tube.visible = state.tog.flows || vis.has(f.index)); $("#legend").hidden = !flows.some(f => f.tube.visible); dirty = true; }
-  function setLabels(selIndex) { harbor.label?.classList.remove("sel"); islands.forEach(s => { s.label.classList.toggle("sel", s.index === selIndex); s.label.classList.toggle("dim", selIndex != null && s.index !== selIndex); }); }
+  function setLabels(selIndex) { harbor.label?.classList.remove("sel"); beacon.label?.classList.remove("sel"); islands.forEach(s => { s.label.classList.toggle("sel", s.index === selIndex); s.label.classList.toggle("dim", selIndex != null && s.index !== selIndex); }); }
   function markList(key) { document.querySelectorAll("#sideList [data-key]").forEach(b => b.setAttribute("aria-current", b.dataset.key === key ? "true" : "false")); }
   function selectIsland(i) {
     const s = islands[i]; state.sel = { type:"island", i };
@@ -1535,19 +1601,29 @@ async function main() {
   function selectItem(id) {
     const it = itemById[id]; if (!it) return; state.sel = { type:"item", id };
     selectedOwners = new Set([id]); recolor(); showFlows(flowsOf(it.island)); setLabels(it.island.index); showPins(it.island, id);
-    openCard(itemCard(it)); focus(new V3(it.pos.x, TOP + it.scale * .4, it.pos.z), [1.6, 2.5, 3.2]); markList(id);
+    openCard(itemCard(it)); focus(new V3(it.pos.x, it.pos.y + it.scale * .4, it.pos.z), [1.6, 2.5, 3.2]); markList(id);
   }
   function selectFlow(i) {
     const f = flows[i]; state.sel = { type:"flow", i };
     selectedOwners = new Set(); recolor(); showFlows([f]); setLabels(null); clearPins();
     openCard(flowCard(f)); const mid = f.A.pos.clone().lerp(f.B.pos, .5);
-    const span = f.A.pos.distanceTo(f.B.pos); focus(mid, [2.75 + span * .2, 5.3 + span * .5, 6.2 + span * .55]); markList("f" + i);
+    let span = 0; f.route.forEach(a => f.route.forEach(b => { span = Math.max(span, a.pos.distanceTo(b.pos)); }));
+    if (f.viaIsl.length) mid.copy(f.route.reduce((acc, r) => acc.add(r.pos), new V3()).multiplyScalar(1 / f.route.length));
+    focus(mid, [2.75 + span * .2, 5.3 + span * .5, 6.2 + span * .55]); markList("f" + i);
   }
   function selectWalker(i) {
     const w = walkers[i]; state.sel = { type:"walker", i };
     selectedOwners = new Set(); recolor(); showFlows([flows[w.f]]); setLabels(null); clearPins();
     if (!w.name) { const el = document.createElement("div"); el.className = "bubble"; el.textContent = `正在搬${flows[w.f].cargo}`; w.name = new CSS2DObject(el); w.name.visible = false; scene.add(w.name); }
     openCard(walkerCard(w)); walkerPoint(w); focus(w.pos.clone(), [1.3, 1.9, 2.6]);
+  }
+  function selectBeacon() {
+    state.sel = { type:"beacon" }; selectedOwners = new Set(); recolor(); showFlows([]); setLabels(null); clearPins();
+    beacon.label.classList.add("sel");
+    openCard(`<div class="eyebrow">燈塔 · 在${esc(hb.name)}外海</div><h2>${esc(bk.name)}</h2><p>${esc(bk.desc)}</p>${tilesOf(bk)}
+      <ul class="facts">${bk.facts.map(f => `<li>${esc(f)}</li>`).join("")}</ul>
+      <h3>夜裡</h3><p>天黑後燈室亮起,兩道光束繞著群島轉,渡輪循著光靠岸。</p><div class="chips">${islandChip(harbor)}${islandChip(hIsl)}</div>`);
+    focus(beacon.pos.clone().setY(1.2), [4.6, 5.6, 9.6]); markList("beacon");
   }
   function selectHarbor() {
     state.sel = { type:"harbor" }; selectedOwners = new Set(); recolor(); showFlows(flowsOf(harbor)); setLabels(hIsl.index); clearPins();
@@ -1577,7 +1653,8 @@ async function main() {
     if (o === walkerMeshes.body || o === walkerMeshes.head) return selectWalker(hit.instanceId);
     if (o.userData.flow != null) return selectFlow(o.userData.flow);
     if (o.isInstancedMesh) { const own = o.userData.owners[hit.instanceId];
-      if (own?.type === "item") return selectItem(own.id); if (own?.type === "island") return selectIsland(own.i); if (own?.type === "harbor") return selectHarbor(); return; }
+      if (own?.type === "item") return selectItem(own.id); if (own?.type === "island") return selectIsland(own.i); if (own?.type === "harbor") return selectHarbor();
+      if (own?.type === "beacon") return selectBeacon(); return; }
     if (o.userData.harbor) return selectHarbor();
     if (o.userData.island != null) return selectIsland(o.userData.island);
   });
@@ -1596,17 +1673,20 @@ async function main() {
       }).join("");
       const hbRow = hit(hb.name) || hit(hb.desc) || hit("碼頭 訪客 船") ? `<ol class="list"><li><button type="button" data-key="harbor" data-harbor>
         <span class="n" style="background:${hb.color}">⚓</span><span>${esc(hb.name)}<small>訪客搭船上岸,親自參與評測</small></span><span class="st s1">開放</span></button></li></ol>` : "";
-      box.innerHTML = (hbRow + html) || `<p class="empty">找不到「${esc(q)}」。試試「P11」「題庫」或「94%」。</p>`;
+      const bkRow = hit(bk.name) || hit(bk.desc) || hit("燈塔") ? `<ol class="list"><li><button type="button" data-key="beacon" data-beacon>
+        <span class="n" style="background:${bk.color}">燈</span><span>${esc(bk.name)}<small>碼頭外海的礁石小島</small></span><span class="st s2">已上線</span></button></li></ol>` : "";
+      box.innerHTML = (hbRow + bkRow + html) || `<p class="empty">找不到「${esc(q)}」。試試「P11」「題庫」或「94%」。</p>`;
     } else {
-      const fl = flows.filter(f => hit(f.cargo) || hit(f.A.name) || hit(f.B.name) || hit(f.role));
+      const fl = flows.filter(f => hit(f.cargo) || f.route.some(r => hit(r.name)) || hit(f.role));
       box.innerHTML = fl.length ? `<ol class="list">${fl.map(f => `<li><button type="button" data-key="f${f.index}" data-flow="${f.index}"><span class="n" style="background:${f.B.color}">${f.index + 1}</span>
-        <span>${esc(f.A.name)} → ${esc(f.B.name)}<small>${esc(f.role)}搬${esc(f.cargo)}</small></span><span class="st ${f.level === "pending" ? "s0" : f.level === "thematic" ? "s1" : "s2"}">${LEVELS[f.level]}</span></button></li>`).join("")}</ol>`
+        <span>${f.route.map(r => esc(r.name)).join(" → ")}<small>${esc(f.role)}搬${esc(f.cargo)}</small></span><span class="st ${f.level === "pending" ? "s0" : f.level === "thematic" ? "s1" : "s2"}">${LEVELS[f.level]}</span></button></li>`).join("")}</ol>`
         : `<p class="empty">找不到「${esc(q)}」。</p>`;
     }
     box.querySelectorAll("summary[data-island]").forEach(el => el.addEventListener("click", () => selectIsland(+el.dataset.island)));
     box.querySelectorAll("button[data-item]").forEach(el => el.addEventListener("click", () => selectItem(el.dataset.item)));
     box.querySelectorAll("button[data-flow]").forEach(el => el.addEventListener("click", () => selectFlow(+el.dataset.flow)));
     box.querySelectorAll("button[data-harbor]").forEach(el => el.addEventListener("click", selectHarbor));
+    box.querySelectorAll("button[data-beacon]").forEach(el => el.addEventListener("click", selectBeacon));
   }
   $("#search").addEventListener("input", renderSide);
   for (const [id, t] of [["#tabTopics", "topics"], ["#tabFlows", "flows"]]) $(id).addEventListener("click", () => {
@@ -1616,7 +1696,7 @@ async function main() {
   // ---------- 日誌 ----------
   const logList = $("#logList");
   flows.forEach(f => { const o = document.createElement("option"); o.value = f.id; o.textContent = `${f.A.name}→${f.B.name}`; $("#logFilter").append(o); });
-  const TAGS = { arrive:["抵達", "t-arrive"], handoff:["交接", "t-handoff"], depart:["出發", "t-depart"], commit:["提交", "t-commit"] };
+  const TAGS = { stop:["停留", "t-stop"], arrive:["抵達", "t-arrive"], handoff:["交接", "t-handoff"], depart:["出發", "t-depart"], commit:["提交", "t-commit"] };
   function addLog(type, text, flowId, time) {
     const li = document.createElement("li"); li.dataset.flow = flowId || "";
     li.innerHTML = `<time>${time || clockStr()}</time><span class="tag ${TAGS[type][1]}">${TAGS[type][0]}</span><span>${esc(text)}</span>`;
@@ -1701,6 +1781,7 @@ async function main() {
     W = stage.clientWidth || innerWidth; H = stage.clientHeight || innerHeight;
     renderer.setSize(W, H); labelRenderer.setSize(W, H); camera.aspect = W / H; camera.updateProjectionMatrix(); dirty = true;
     fwMat.uniforms.uScale.value = H * renderer.getPixelRatio() / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+    spMat.uniforms.uScale.value = fwMat.uniforms.uScale.value;
   }
   new ResizeObserver(resize).observe(stage); resize();
   camera.position.copy(overviewPos()); controls.target.copy(overviewTarget());
@@ -1720,6 +1801,7 @@ async function main() {
       boats.forEach(b => { b.userData.a += b.userData.speed * dt; placeBoat(b); });
       ferries.forEach(f => placeFerry(f, dt));
       checkFireworkClock(dt);
+      spMat.uniforms.uTime.value = state.time; beam.rotation.y += dt * .7;
       if (rockets.length || fw.live || flash.intensity) updateFireworks(dt);
       dirty = true;
     }
