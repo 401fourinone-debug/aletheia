@@ -1,0 +1,8 @@
+# Plesk/Apache:把文件根目錄設為 docs/ 時,島嶼頁當首頁(GitHub Pages 會忽略這個檔)
+DirectoryIndex island.html index.html
+
+<IfModule mod_mime.c>
+  AddType application/json .json
+  AddType text/markdown .md
+  AddCharset utf-8 .html .md .txt .json
+</IfModule>
