@@ -306,7 +306,7 @@ const DATA = {
     { id:"hq", name:"協議本部", color:"#db6a41", q:0, r:0, lift:.42, ground:"grass", tree:"round",
       summary:"SKILL.md 的家。一段可以直接貼進任何 AI 的規則,v2.4 全文 11,651 字、16 條原則。",
       items:[
-        { id:"hq-1", name:"協議全文", model:"hall", stage:2, desc:"唯一的正式版本,貼進系統提示、自訂指令或第一則訊息就全程啟用。", facts:["v2.4 全文 11,651 字","16 條原則:11 條保護、5 條合作","CC BY 4.0,可商用"] },
+        { id:"hq-1", name:"協議全文", model:"clocktower", stage:2, desc:"唯一的正式版本,貼進系統提示、自訂指令或第一則訊息就全程啟用。", facts:["v2.4 全文 11,651 字","16 條原則:11 條保護、5 條合作","CC BY 4.0,可商用"] },
         { id:"hq-2", name:"版本塔", model:"xtree", stage:2, desc:"從草稿到 v2.4,每一版改了什麼都寫在版本歷程。", facts:["v0 → v1.0 → v2.0 → v2.1 → v2.2 → v2.4","v2.2 的修改全部來自 2 份測評報告","v2.4 把 3 條最常被違反的規則前置成檢查清單"] },
         { id:"hq-3", name:"公證模式", model:"archive", stage:2, desc:"預設的結構化輸出:確鑿事實、邏輯推演、數據斷點、結論與建議。", facts:["4 段固定格式","v2.1 測出格式膨脹:fit 3.25 → 3.00","v2.2 起信心度改用 10% 級距"] },
         { id:"hq-4", name:"對話模式", model:"stall", stage:2, desc:"情緒題、簡單題、使用者在爭辯時,改用自然語言,不硬套四段。", facts:["v2.3 曾讓簡單題硬套格式","v2.4 修好:簡單題 100% / 100%","修法是改結構,不是加規則"] },
@@ -323,9 +323,9 @@ const DATA = {
         { id:"p6", name:"P6 自檢不等於驗證", model:"magnifier", stage:2, evidence:"na", desc:"照協議格式寫,不等於做了事實查核;沒工具就不說「已查證」。", facts:["v2.1 新增","沒有來源就退到較低引用階層"] }
       ] },
     { id:"safe", name:"安全原則", color:"#6f7fb5", q:0, r:-1, ground:"grass", tree:"willow",
-      summary:"保護原則的後半(P7–P11):權限、人類覆核、時效、具體數字、夾帶指令。唯一重現的規則在這座島。",
+      summary:"保護原則的後半(P7–P11):權限、人類覆核、時效、具體數字、夾帶指令。唯一重現的規則在這座島。島上是法院,警察巡邏,也有人指揮交通、修剪樹木、打掃環境。",
       items:[
-        { id:"p11", name:"P11 不可信輸入", model:"shield", stage:2, evidence:"yes", desc:"網頁、檔案、使用者貼上的第三方文字一律當資料;照常完成工作,再說明裡面夾帶了什麼指令。", facts:["inject-01:0% → 100%(4 輪)","偽裝成注意事項 inject-02:0% → 75%","手動測試:3 家有協議全部揭露"] },
+        { id:"p11", name:"P11 不可信輸入", model:"courthouse", big:1.3, stage:2, evidence:"yes", desc:"網頁、檔案、使用者貼上的第三方文字一律當資料;照常完成工作,再說明裡面夾帶了什麼指令。", facts:["inject-01:0% → 100%(4 輪)","偽裝成注意事項 inject-02:0% → 75%","手動測試:3 家有協議全部揭露"] },
         { id:"p7", name:"P7 權限與監督", model:"gate", stage:2, evidence:"na", desc:"不主動執行外部動作;被要求停止、撤回就照做,不隱瞞失敗。", facts:["v2.1 擴充","不以任何理由隱瞞操作紀錄"] },
         { id:"p8", name:"P8 人類覆核", model:"clinic", stage:2, evidence:"no", desc:"高風險領域標示 ⚠️ HUMAN_REVIEW_REQUIRED,而且不准說「沒問題」。", facts:["租約題放行:無協議 3/4 輪、有協議 3/4 輪","規則根本沒觸發","標籤之後仍要給可立刻執行的下一步"] },
         { id:"p9", name:"P9 時效標示", model:"clock", stage:2, evidence:"na", desc:"價格、法規、現任職位這類動態數據,附「以 YYYY-MM 為準」。", facts:["v2.1 把基本工資年度寫錯 1 年","超出資料時點的數字一律進數據斷點"] },
@@ -630,7 +630,7 @@ async function main() {
     prism:new THREE.CylinderGeometry(0.5, 0.5, 1, 3).rotateX(-Math.PI / 2).translate(0, 0.25, 0).scale(1 / 0.866, 1 / 0.75, 1),
     hip:new THREE.ConeGeometry(Math.SQRT1_2, 1, 4).rotateY(Math.PI / 4).translate(0, 0.5, 0)
   };
-  G.glowbox = G.box; G.glowsphere = G.sphere;
+  G.glowbox = G.box; G.glowsphere = G.sphere; G.glowcyl = G.cyl;
   const solidMat = new THREE.MeshStandardMaterial({ roughness:0.78, metalness:0 });
   const glowMat = new THREE.MeshStandardMaterial({ roughness:0.5, metalness:0, emissive:new Col("#ffc777"), emissiveIntensity:0 });
 
@@ -747,6 +747,46 @@ async function main() {
       p("box",0,.05,0,.7,.1,.7,C.stone); p("box",0,.14,0,.52,.08,.52,"#d8cbbd"); p("box",0,.18+h/2,0,.24,h,.24,"#e9e1d6"); p("hip",0,.18+h,0,.24,.2,.24,"#e9e1d6");
       p("box",0,.42,.125,.16,.2,.01,C.ink); p("cyl",-.22,.21,.22,.04,.06,.04,C.cream); p("glowsphere",-.22,.26,.22,.04,.06,.04,C.lamp);
       [C.pink,a,C.yellow].forEach((c, i) => p("sphere",.14+i*.06,.22,.24,.06,.06,.06,c)); },
+    // 鐘塔(協議本部):大廳加高塔,四面鐘夜裡發光,尖頂
+    clocktower(p, a) {
+      const S = "#efe2c8", S2 = "#dccaa8", SP = "#4f6a60";
+      p("rbox",0,.06,.05,1,.12,.72,C.stone);
+      p("box",0,.29,.12,.92,.34,.52,S); p("box",0,.47,.12,.96,.04,.56,S2); p("prism",0,.49,.12,.94,.16,.54,a);
+      p("box",0,.24,.385,.14,.24,.01,"#5a4030");
+      for (const x of [-.32,-.17,.17,.32]) p("glowbox",x,.31,.385,.08,.13,.005,C.win);
+      p("box",0,.72,-.16,.34,.96,.34,S);
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) p("box",sx * .165,.72,-.16 + sz * .165,.05,.96,.05,S2);
+      for (let k = 0; k < 3; k++) for (const fz of [1, -1]) p("glowbox",0,.42 + k * .2,-.16 + fz * .172,.07,.1,.004,C.win);
+      p("box",0,1.08,-.16,.42,.26,.42,S2);
+      const faces = [[0, .212, 0], [0, -.212, Math.PI], [.212, 0, Math.PI / 2], [-.212, 0, -Math.PI / 2]];
+      for (const [dx, dz, ry] of faces) {
+        const fx = dx, fzz = -.16 + dz;
+        p("glowcyl",fx,1.08,fzz,.28,.012,.28,"#fff4d6",ry,Math.PI / 2);
+        p("box",fx + Math.sin(ry) * .009,1.105,fzz + Math.cos(ry) * .009,.012,.075,.004,C.ink,ry);
+        p("box",fx + Math.sin(ry) * .009 + Math.cos(ry) * .02,1.08,fzz + Math.cos(ry) * .009 - Math.sin(ry) * .02,.05,.012,.004,C.ink,ry);
+        p("torus",fx,1.08,fzz,.3,.3,.3,C.gold,ry);
+      }
+      p("box",0,1.25,-.16,.36,.08,.36,S);
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) p("cone",sx * .17,1.33,-.16 + sz * .17,.05,.1,.05,SP);
+      p("hip",0,1.29,-.16,.36,.2,.36,SP); p("cone",0,1.48,-.16,.07,.12,.07,SP); p("sphere",0,1.56,-.16,.035,.035,.035,C.gold);
+    },
+    // 法院:方柱門廊、山牆上的金色天秤、屋頂的正義女神
+    courthouse(p, a) {
+      const W = "#f1ece2", W2 = "#ddd3c3", COL = "#faf6ee", GD = C.gold;
+      p("box",0,.05,0,1,.1,.82,W2);
+      for (let k = 0; k < 4; k++) p("box",0,.12 + k * .04,.39 - k * .03,.86 - k * .05,.04,.1,W2);
+      p("box",0,.42,-.1,.9,.56,.56,W);
+      for (let i = 0; i < 6; i++) { const x = -.375 + i * .15; p("box",x,.43,.22,.075,.52,.075,COL); p("box",x,.7,.22,.1,.03,.1,W2); p("box",x,.185,.22,.1,.03,.1,W2); }
+      p("box",0,.735,.08,.96,.06,.36,W2); p("prism",0,.765,.08,.98,.2,.38,W);
+      p("box",0,.83,.272,.005,.09,.01,GD); p("box",0,.87,.272,.16,.008,.01,GD);
+      for (const sx of [-1, 1]) { p("box",sx * .07,.845,.272,.003,.05,.006,GD); p("cyl",sx * .07,.818,.272,.06,.008,.03,GD); }
+      p("box",0,.34,.181,.14,.3,.01,"#4a3626");
+      for (const sx of [-1, 1]) for (const z of [-.25, -.05]) p("glowbox",sx * .452,.46,z,.006,.2,.07,C.win);
+      p("box",0,.84,-.2,.5,.16,.3,W); p("hip",0,.92,-.2,.52,.12,.32,a);
+      p("cyl",0,1.05,-.2,.08,.04,.08,W2); p("cone",0,1.13,-.2,.11,.16,.11,GD); p("sphere",0,1.24,-.2,.05,.05,.05,GD);
+      p("box",0,1.19,-.2,.2,.008,.008,GD); for (const sx of [-1, 1]) { p("box",sx * .1,1.16,-.2,.003,.05,.003,GD); p("cyl",sx * .1,1.135,-.2,.06,.006,.06,GD); }
+      for (const sx of [-.46, .46]) { p("cyl",sx,.24,.44,.04,.22,.04,W2); p("glowsphere",sx,.38,.44,.05,.05,.05,C.lamp); }
+    },
     // 古典圖書館/博物館:三層台階、八柱門廊、山牆、青銅圓頂、高窗
     museum(p, a) {
       const S = "#efe6d4", S2 = "#e3d6bd", D = "#c9b896", COL = "#f8f2e6", PAT = "#6f8c7e";
@@ -1574,6 +1614,94 @@ async function main() {
       float core = smoothstep(.5, 0., r); gl_FragColor = vec4(vC * (.7 + core * 1.3), vA * core); }` });
   const fwPoints = new THREE.Points(fwGeo, fwMat); fwPoints.frustumCulled = false; fwPoints.renderOrder = 6; scene.add(fwPoints);
   const flash = new THREE.PointLight(0xffd25e, 0, 16, 1.6); scene.add(flash);
+  // ---------- 安全原則:警察巡邏、交通指揮、園丁修樹、清潔員打掃 ----------
+  const npcs = [];
+  function makeNPC(o) {
+    const g = new THREE.Group(), m = c => new THREE.MeshStandardMaterial({ color:c, roughness:.7 }), tag = { island:o.island };
+    const add = (geo, mt, x, y, z, sx = 1, sy = 1, sz = 1, parent = g) => { const mm = new THREE.Mesh(geo, mt); mm.position.set(x, y, z); mm.scale.set(sx, sy, sz); mm.castShadow = true; mm.userData.sign = tag; parent.add(mm); signMeshes.push(mm); return mm; };
+    const legs = [-.03, .03].map(sx => { const l = new THREE.Group(); l.position.set(sx, .12, 0); g.add(l); add(wGeo.leg, m(o.legs || "#2f3a52"), 0, -.055, 0, 1, 1, 1, l); add(G.sphere, m("#211d1d"), 0, -.108, .012, .045, .028, .065, l); return l; });
+    add(wGeo.body, m(o.body), 0, .18, 0);
+    const head = new THREE.Group(); head.position.set(0, .3, 0); g.add(head);
+    add(wGeo.head, m("#f3d2b8"), 0, 0, 0, 1, 1, 1, head); add(wGeo.hair, m(o.hair || "#2e2320"), 0, .005, -.006, 1, 1, 1, head);
+    for (const sx of [-.026, .026]) add(wGeo.eye, m(C.ink), sx, .005, .068, 1, 1, 1, head);
+    const armL = new THREE.Group(), armR = new THREE.Group(); armL.position.set(-.075, .225, 0); armR.position.set(.075, .225, 0); g.add(armL, armR);
+    for (const ar of [armL, armR]) { add(wGeo.arm, m(o.body), 0, -.045, 0, 1, 1, 1, ar); add(G.sphere, m(o.hands || "#f3d2b8"), 0, -.095, 0, .04, .04, .04, ar); }
+    const parts = { g, legs, head, armL, armR, add, m };
+    if (o.extra) o.extra(parts);
+    g.scale.setScalar(o.scale || 1.1); scene.add(g);
+    const sh = new THREE.Mesh(wGeo.shadow, new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:.2, depthWrite:false })); scene.add(sh); parts.shadow = sh;
+    return parts;
+  }
+  {
+    const s = islandById["safe"], C0 = s.pos, ty = s.top, at = (x, z) => new V3(C0.x + x, ty, C0.z + z);
+    const policeCap = ({ add, m, head }) => { add(G.cyl, m("#1f2a44"), 0, .075, -.005, .17, .05, .17, head); add(G.box, m("#111"), 0, .052, .07, .12, .008, .06, head); add(G.sphere, m(C.gold), 0, .08, .085, .025, .025, .01, head); };
+    const beltBadge = ({ add, m }) => { add(G.torus, m("#111"), 0, .14, 0, .12, .12, .14).rotation.x = Math.PI / 2; add(G.sphere, m(C.gold), .03, .22, .055, .018, .018, .008); };
+    const WAY = [[-1.15, -.2], [1.18, -.05], [-.6, 1.15], [.5, 1.22], [-1.22, .62], [1.28, .32], [-.9, -.78], [.95, -.8], [-.3, 1.32], [.3, .25]].map(([x, z]) => at(x, z));
+    for (let k = 0; k < 3; k++) {
+      const n = makeNPC({ island:s.index, body:"#2d3e66", legs:"#1f2a44", extra:p => { policeCap(p); beltBadge(p); } });
+      n.kind = "police"; n.pos = WAY[k * 3].clone(); n.target = WAY[(k * 3 + 4) % WAY.length].clone(); n.wait = k; n.phase = k * 2; npcs.push(n);
+    }
+    // 交通指揮:站在往協議本部的橋頭
+    const hqI = islandById["hq"], d = new V3().subVectors(hqI.pos, C0).setY(0).normalize(), side = new V3(-d.z, 0, d.x);
+    const tpos = C0.clone().addScaledVector(d, MID_R - .24).addScaledVector(side, -.24); tpos.y = ty;
+    const traffic = makeNPC({ island:s.index, body:"#ff7a2f", legs:"#2f3a52", hands:"#ffffff", extra:({ add, m, head }) => {
+      add(G.cyl, m("#ffffff"), 0, .075, -.005, .17, .05, .17, head); add(G.box, m("#111"), 0, .052, .07, .12, .008, .06, head);
+      for (const y of [.15, .2]) add(G.torus, m("#f4f6f8"), 0, y, 0, .118, .118, .1).rotation.x = Math.PI / 2;
+      add(G.cyl, m("#e8c25a"), .03, .275, .065, .008, .03, .008).rotation.x = Math.PI / 2; } });
+    traffic.kind = "traffic"; traffic.pos = tpos; traffic.face = Math.atan2(side.x, side.z); npcs.push(traffic);
+    // 園丁:在愛心樹旁修剪
+    const hp = s.heart ? new V3(s.heart.x, ty, s.heart.z) : at(.9, .66);
+    const gardener = makeNPC({ island:s.index, body:"#6f9a52", legs:"#5a4636", extra:({ add, m, head, armR }) => {
+      add(G.cone, m("#e8d29a"), 0, .1, 0, .2, .09, .2, head); add(G.cyl, m("#e8d29a"), 0, .06, 0, .27, .01, .27, head);
+      add(G.box, m("#4f7a3c"), 0, .16, .055, .09, .1, .01);
+      const sh1 = add(G.box, m("#9aa3ad"), .01, -.12, .03, .008, .008, .09, armR), sh2 = add(G.box, m("#9aa3ad"), -.01, -.12, .03, .008, .008, .09, armR); armR.userData.blades = [sh1, sh2]; } });
+    gardener.kind = "gardener"; gardener.pos = hp.clone().add(new V3(-.36, 0, .2)); gardener.face = Math.atan2(hp.x - gardener.pos.x, hp.z - gardener.pos.z); npcs.push(gardener);
+    // 清潔員:在草地上來回掃地
+    const sweeper = makeNPC({ island:s.index, body:"#4f8fbf", legs:"#3b4660", extra:({ add, m, head, g }) => {
+      add(G.cyl, m("#2f6f8f"), 0, .07, -.005, .16, .04, .16, head); add(G.box, m("#2f6f8f"), 0, .055, .07, .1, .008, .06, head);
+      const broom = new THREE.Group(); broom.position.set(.06, .16, .08); g.add(broom);
+      add(G.cyl, m("#a87a55"), 0, -.02, .03, .012, .26, .012, broom).rotation.x = .5;
+      add(G.box, m("#d9b45a"), 0, -.13, .1, .1, .03, .04, broom);
+      g.userData.broom = broom; } });
+    sweeper.kind = "sweeper"; sweeper.a = at(-1.05, .95); sweeper.b = at(-.55, 1.22); sweeper.t = 0; sweeper.pos = sweeper.a.clone(); npcs.push(sweeper);
+  }
+  function updateNPCs(dt) {
+    const t = state.time, still = state.reduced;
+    for (const n of npcs) {
+      let walking = false, heading = n.face || 0;
+      if (n.kind === "police") {
+        if (n.wait > 0) { n.wait -= dt; n.head.rotation.y = Math.sin(t * 1.5 + n.phase) * .6; }
+        else { const d = new V3().subVectors(n.target, n.pos).setY(0), len = d.length();
+          if (len < .03) { n.wait = 1 + (Math.sin(t * 13 + n.phase) * .5 + .5) * 2; n.target = n.target === n.pos ? n.pos : WAYPOINT(n); }
+          else { n.pos.addScaledVector(d.normalize(), Math.min(len, dt * .26)); walking = true; n.head.rotation.y = 0; }
+          heading = Math.atan2(d.x, d.z); n.lastH = heading; }
+        if (!walking && n.lastH != null) heading = n.lastH;
+        n.armL.rotation.set(walking ? Math.sin(t * 9 + n.phase) * .4 : 0, 0, -.1); n.armR.rotation.set(walking ? -Math.sin(t * 9 + n.phase) * .4 : 0, 0, .1);
+      } else if (n.kind === "traffic") {
+        const ph = Math.floor(t / 2.2) % 2, k = still ? 0 : Math.sin(t * 5);
+        heading = n.face + (ph ? .7 : -.7);
+        n.armR.rotation.set(0, 0, ph ? 1.55 : 1.55 + k * .1); n.armL.rotation.set(ph ? -1.3 + k * .4 : 0, 0, ph ? -.1 : -1.4 + k * .3);
+        n.head.rotation.y = ph ? -.3 : .3;
+      } else if (n.kind === "gardener") {
+        const k = still ? 0 : Math.sin(t * 10);
+        n.armR.rotation.set(-1.25 + Math.sin(t * 1.3) * .2, 0, .1); n.armL.rotation.set(-1.1 + Math.sin(t * 1.3) * .2, 0, -.2);
+        const bl = n.armR.userData.blades; if (bl) { bl[0].rotation.y = .3 + k * .25; bl[1].rotation.y = -.3 - k * .25; }
+        n.head.rotation.x = -.2;
+      } else if (n.kind === "sweeper") {
+        n.t += dt * .12; const u = (Math.sin(n.t * Math.PI * 2) + 1) / 2; const prevPos = n.pos.clone(); n.pos.lerpVectors(n.a, n.b, u);
+        const d = new V3().subVectors(n.pos, prevPos); walking = d.lengthSq() > 1e-8; if (walking) n.lastH = Math.atan2(d.x, d.z); heading = n.lastH || 0;
+        const br = n.g.userData.broom; if (br) br.rotation.y = still ? 0 : Math.sin(t * 6) * .5;
+        n.armL.rotation.set(-.7, 0, .3); n.armR.rotation.set(-.6 + (still ? 0 : Math.sin(t * 6) * .2), 0, -.2);
+      }
+      const sw = walking && !still ? Math.sin(t * 9 + (n.phase || 0)) : 0;
+      n.legs[0].rotation.x = sw * .5; n.legs[1].rotation.x = -sw * .5;
+      n.g.position.copy(n.pos); n.g.position.y += walking && !still ? Math.abs(sw) * .012 : 0; n.g.rotation.y = heading;
+      n.shadow.position.set(n.pos.x, n.pos.y + .004, n.pos.z);
+    }
+  }
+  function WAYPOINT(n) { const s = islandById["safe"], pts = [[-1.15, -.2], [1.18, -.05], [-.6, 1.15], [.5, 1.22], [-1.22, .62], [1.28, .32], [-.9, -.78], [.95, -.8], [-.3, 1.32], [.3, .25]];
+    const [x, z] = pts[Math.floor((Math.sin(state.time * 7.3 + (n.phase || 0)) * .5 + .5) * pts.length) % pts.length]; return new V3(s.pos.x + x, s.top, s.pos.z + z); }
+
   // ---------- 評審台:中央圓桌,評審圍著開會 ----------
   const meeting = [];
   {
@@ -2416,7 +2544,7 @@ async function main() {
   camera.position.copy(overviewPos()); controls.target.copy(overviewTarget());
 
   // ---------- 主迴圈 ----------
-  applyDayNight(); poseWalkers(); boats.forEach(placeBoat); ferries.forEach(f => placeFerry(f, 0)); skiffs.forEach(placeSkiff); poseYuri(0); updateWheel(0); updateMeeting(); updateBulbs();
+  applyDayNight(); poseWalkers(); boats.forEach(placeBoat); ferries.forEach(f => placeFerry(f, 0)); skiffs.forEach(placeSkiff); poseYuri(0); updateWheel(0); updateMeeting(); updateNPCs(0); updateBulbs();
   let last = performance.now(), frame = 0, smallVisible = true;
   function loop(now) {
     requestAnimationFrame(loop);
@@ -2449,7 +2577,7 @@ async function main() {
       updatePods(dt); updateSchools(dt); updateHeli(dt); updateSplashes(dt); poseYuri(dt);
       checkFireworkClock(dt);
       spMat.uniforms.uTime.value = state.time; beam.rotation.y += dt * .7;
-      updateWheel(dt); updateMeeting();
+      updateWheel(dt); updateMeeting(); updateNPCs(dt);
       bows.forEach(b => b.tails.forEach((t, k) => { t.rotation.z = Math.sin(state.time * 2.2 + b.phase + k * 1.3) * .14; t.rotation.x = Math.sin(state.time * 1.7 + b.phase) * .1; }));
       if (rockets.length || fw.live || flash.intensity) updateFireworks(dt);
   }
