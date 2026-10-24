@@ -567,20 +567,33 @@ async function main() {
   // ---------- 水 ----------
   const water = new THREE.Mesh(new THREE.CircleGeometry(160, 64).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({
     fog:true,
-    uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uShallow:{ value:new Col("#a4d4da") }, uDeep:{ value:new Col("#6fa9b8") },
+    uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uShallow:{ value:new Col("#a4d4da") }, uDeep:{ value:new Col("#6fa9b8") }, uMid:{ value:new Col("#5fb3c8") }, uAbyss:{ value:new Col("#2c5f8a") },
       uTime:{ value:0 }, uCenter:{ value:new THREE.Vector2(center.x, center.z) } }]),
     vertexShader:`#include <fog_pars_vertex>
       varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.); vW = w.xyz; vec4 mvPosition = viewMatrix * w;
       gl_Position = projectionMatrix * mvPosition;
       #include <fog_vertex>
       }`,
-    fragmentShader:`uniform vec3 uShallow,uDeep; uniform float uTime; uniform vec2 uCenter; varying vec3 vW;
+    fragmentShader:`uniform vec3 uShallow,uMid,uDeep,uAbyss; uniform float uTime; uniform vec2 uCenter; varying vec3 vW;
       #include <fog_pars_fragment>
-      void main(){ float d = length(vW.xz - uCenter);
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+        return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
+      void main(){ vec2 q = vW.xz - uCenter; float d = length(q);
+        float n = vnoise(vW.xz * .09 + vec2(uTime * .02, 0.)) * .6 + vnoise(vW.xz * .27 - vec2(0., uTime * .03)) * .4;
+        float dd = d + (n - .5) * 7.;
+        // 四層藍:淺綠藍 → 湖水藍 → 深藍 → 海溝藍
+        vec3 c = mix(uShallow, uMid, smoothstep(4., 10., dd));
+        c = mix(c, uDeep, smoothstep(9., 20., dd));
+        c = mix(c, uAbyss, smoothstep(19., 45., dd));
+        // 等深線般的淡色帶
+        float band = smoothstep(.0, .06, abs(fract(dd * .18) - .5) - .44);
+        c += band * .035 * (1. - smoothstep(30., 60., dd));
         float w1 = sin(vW.x*.35 + uTime*.6) * sin(vW.z*.31 - uTime*.45) * .5 + .5;
         float w2 = sin((vW.x + vW.z)*.9 + uTime*1.1) * sin((vW.x - vW.z)*.7 - uTime*.8) * .5 + .5;
-        vec3 c = mix(uShallow, uDeep, clamp(smoothstep(9., 46., d)*.9 + (w1 - .5)*.14, 0., 1.));
+        c *= .94 + w1 * .1;
         c += pow(w1 * w2, 9.) * .22;
+        c += smoothstep(.62, .75, vnoise(vW.xz * 1.6 + uTime * .25)) * .05 * (1. - smoothstep(10., 30., d));
         gl_FragColor = vec4(c, 1.);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -828,6 +841,36 @@ async function main() {
   const foamMat = new THREE.MeshBasicMaterial({ color:"#ffffff", transparent:true, opacity:.55, depthWrite:false });
   const lampSpots = [], bulbs = [], stripMats = [], strips = [];
 
+  // 島名立牌與路牌的貼圖
+  const signFont = w => `900 ${w}px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`;
+  function nameBoardTex(no, name, color) {
+    const c = document.createElement("canvas"); c.width = 512; c.height = 150; const g = c.getContext("2d");
+    g.fillStyle = "#fffaf2"; g.beginPath(); g.roundRect(0, 0, 512, 150, 18); g.fill();
+    g.fillStyle = color; g.beginPath(); g.roundRect(10, 10, 130, 130, 14); g.fill(); g.fillRect(10, 136, 492, 6);
+    g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle"; g.font = `800 ${no.length > 2 ? 40 : 60}px ui-monospace,Menlo,monospace`; g.fillText(no, 75, 78);
+    let fs = 70; g.font = signFont(fs); while (g.measureText(name).width > 340 && fs > 30) { fs -= 2; g.font = signFont(fs); }
+    g.fillStyle = "#211d1d"; g.textAlign = "left"; g.fillText(name, 160, 76);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+  }
+  function arrowTex(name, color, left) {
+    const c = document.createElement("canvas"); c.width = 384; c.height = 96; const g = c.getContext("2d");
+    g.fillStyle = color; g.beginPath();
+    if (left) { g.moveTo(0, 48); g.lineTo(44, 0); g.lineTo(384, 0); g.lineTo(384, 96); g.lineTo(44, 96); }
+    else { g.moveTo(0, 0); g.lineTo(340, 0); g.lineTo(384, 48); g.lineTo(340, 96); g.lineTo(0, 96); }
+    g.closePath(); g.fill();
+    let fs = 50; g.font = signFont(fs); while (g.measureText(name).width > 270 && fs > 22) { fs -= 2; g.font = signFont(fs); }
+    g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText((left ? "← " : "") + name + (left ? "" : " →"), left ? 214 : 170, 52);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+  }
+  const signMeshes = [], boardGeo = new THREE.PlaneGeometry(1.15, .34), arrowGeo = new THREE.PlaneGeometry(.5, .125);
+  function nameBoard(pos, ry, no, name, color, tag, postLen = .5, sc = 1) {
+    const bp = maker(kit, baseM(pos.x, pos.y, pos.z, sc, ry), null);
+    for (const sx of [-.45, .45]) bp("cyl", sx, .5 - postLen / 2, -.03, .045, postLen, .045, C.wood);
+    bp("rbox", 0, .42, -.005, 1.22, .4, .05, "#8a6248");
+    const face = new THREE.Mesh(boardGeo, new THREE.MeshStandardMaterial({ map:nameBoardTex(no, name, color), roughness:.7 }));
+    face.position.set(pos.x, pos.y + .42 * sc, pos.z).add(new V3(Math.sin(ry), 0, Math.cos(ry)).multiplyScalar(.024 * sc)); face.rotation.y = ry; face.scale.setScalar(sc);
+    face.castShadow = true; face.userData.sign = tag; scene.add(face); signMeshes.push(face);
+  }
   for (const s of islands) {
     const { x, z } = s.pos, ty = s.top;
     const topGeo = hexGeo(R - 0.05).translate(x, ty, z);
@@ -924,9 +967,6 @@ async function main() {
         else { const fb = maker(smallKit, baseM(x + gx * 1.22, ty, z + gz * 1.22, 1, -a), own);
           fb("rbox",0,.03,0,.34,.06,.2,"#8a6a4f"); for (let f = 0; f < 5; f++) fb("sphere",-.12+f*.06,.08,(f%2-.5)*.08,.06,.06,.06,[C.pink,C.yellow,C.cream,"#e48aa5",C.yellow][f]); }
       }
-      const sg = maker(kit, baseM(x, ty, z + 1.42, .9), own);
-      for (const sx of [-.2, .2]) sg("cyl",sx,.18,0,.04,.36,.04,C.wood);
-      sg("rbox",0,.33,0,.5,.16,.04,"#e9e1d6"); sg("box",0,.33,.025,.36,.04,.01,C.ink);
       const tr = mulberry32(404);
       for (let i = 0, tries = 0; i < 46 && tries < 400; tries++) {
         const a = tr() * Math.PI * 2, d = .5 + tr() * .9, tx = Math.cos(a) * d, tz = Math.sin(a) * d;
@@ -952,7 +992,8 @@ async function main() {
     el.innerHTML = `<em>${s.no}</em><span>${esc(s.name)}</span>`;
     el.addEventListener("click", ev => { ev.stopPropagation(); selectIsland(s.index); });
     const lab = new CSS2DObject(el); lab.position.set(x, ty - .05, z + INR + .1); scene.add(lab);
-    s.label = el;
+    s.label = el; el.hidden = true;
+    nameBoard(new V3(x, ty, z + 1.5), 0, s.no, s.name, s.color, { island:s.index }, .5, 1.2);
   }
 
   // ---------- 橋 ----------
@@ -1014,7 +1055,8 @@ async function main() {
     const el = document.createElement("button"); el.type = "button"; el.className = "ilabel"; el.style.setProperty("--c", hb.color);
     el.innerHTML = `<em>⚓</em><span>${esc(hb.name)}</span>`;
     el.addEventListener("click", ev => { ev.stopPropagation(); selectHarbor(); });
-    const lab = new CSS2DObject(el); lab.position.copy(harbor.tip).setY(pierY + .05).addScaledVector(hPerp, .5); scene.add(lab);
+    const lab = new CSS2DObject(el); lab.position.copy(harbor.tip).setY(pierY + .05).addScaledVector(hPerp, .5); scene.add(lab); el.hidden = true;
+    nameBoard(harbor.root.clone().addScaledVector(hDir, .55).addScaledVector(hPerp, -.62).setY(WATER_Y + .35), 0, "港", hb.name, hb.color, { harbor:true }, 1.0);
     harbor.label = el;
   }
 
@@ -1031,7 +1073,8 @@ async function main() {
     const el = document.createElement("button"); el.type = "button"; el.className = "ilabel"; el.style.setProperty("--c", bk.color);
     el.innerHTML = `<em>燈</em><span>${esc(bk.name)}</span>`;
     el.addEventListener("click", ev => { ev.stopPropagation(); selectBeacon(); });
-    const lab = new CSS2DObject(el); lab.position.set(b.x, beacon.lamp.y + .75, b.z); scene.add(lab); beacon.label = el;
+    const lab = new CSS2DObject(el); lab.position.set(b.x, beacon.lamp.y + .75, b.z); scene.add(lab); beacon.label = el; el.hidden = true;
+    nameBoard(new V3(b.x, WATER_Y + .46, b.z + .62), 0, "燈", bk.name, bk.color, { beacon:true }, .5);
   }
   const beamMat = new THREE.ShaderMaterial({ transparent:true, depthWrite:false, side:THREE.DoubleSide, blending:THREE.AdditiveBlending,
     uniforms:{ uOpacity:{ value:0 }, uColor:{ value:new Col("#fff1c4") } },
@@ -1041,6 +1084,49 @@ async function main() {
   const beam = new THREE.Group(); beam.position.copy(beacon.lamp);
   for (const r of [0, Math.PI]) { const m = new THREE.Mesh(beamGeo, beamMat); m.rotation.y = r; m.renderOrder = 5; beam.add(m); }
   beam.visible = false; scene.add(beam);
+
+  // ---------- 路牌:每座橋頭立一支箭頭,指向對岸的島 ----------
+  const arrowTexCache = {};
+  function signpost(from, dirV, dest) {
+    const key = dest.name, ry = Math.atan2(-dirV.z, dirV.x), side = new V3(-dirV.z, 0, dirV.x);
+    arrowTexCache[key] ||= [arrowTex(dest.name, dest.color, false), arrowTex(dest.name, dest.color, true)];
+    const base = from.clone().addScaledVector(dirV, MID_R - .3).addScaledVector(side, .24);
+    const bp = maker(kit, baseM(base.x, base.y, base.z), null);
+    bp("cyl", 0, .24, 0, .035, .48, .035, C.wood); bp("sphere", 0, .49, 0, .05, .05, .05, C.wood);
+    bp("box", .2 * Math.cos(ry), .38, -.2 * Math.sin(ry), .52, .14, .02, "#8a6248", ry);
+    for (const back of [0, 1]) {
+      const m = new THREE.Mesh(arrowGeo, new THREE.MeshStandardMaterial({ map:arrowTexCache[key][back], roughness:.7 }));
+      const n = new V3(Math.sin(ry), 0, Math.cos(ry)).multiplyScalar(back ? -.012 : .012);
+      m.position.set(base.x + .2 * Math.cos(ry), base.y + .38, base.z - .2 * Math.sin(ry)).add(n); m.rotation.y = ry + (back ? Math.PI : 0);
+      m.userData.sign = dest.isHarbor ? { harbor:true } : { island:dest.index }; scene.add(m); signMeshes.push(m);
+    }
+  }
+  for (const [i, j] of neighbors) {
+    const A = islands[i], B = islands[j], d = new V3().subVectors(B.pos, A.pos).setY(0).normalize();
+    signpost(A.pos, d, B); signpost(B.pos, d.clone().negate(), A);
+  }
+  signpost(hIsl.pos, hDir, harbor);
+
+  // ---------- 安全原則的愛心樹 ----------
+  {
+    const s = islandById["safe"], hs = new THREE.Shape();
+    hs.moveTo(0, .25); hs.bezierCurveTo(0, .25, -.05, 0, -.25, 0); hs.bezierCurveTo(-.55, 0, -.55, .35, -.55, .35);
+    hs.bezierCurveTo(-.55, .55, -.35, .77, 0, .95); hs.bezierCurveTo(.35, .77, .55, .55, .55, .35);
+    hs.bezierCurveTo(.55, .35, .55, 0, .25, 0); hs.bezierCurveTo(.1, 0, 0, .25, 0, .25);
+    const hg = new THREE.ExtrudeGeometry(hs, { depth:.22, bevelEnabled:true, bevelThickness:.12, bevelSize:.1, bevelSegments:5, curveSegments:20 });
+    hg.center(); hg.rotateZ(Math.PI); hg.scale(.85, .85, .85);
+    const spot = new V3(s.pos.x + .9, s.top, s.pos.z + .66);
+    const tp = maker(kit, baseM(spot.x, spot.y, spot.z), { type:"island", i:s.index });
+    tp("cyl", 0, .26, 0, .09, .52, .09, "#8a6248"); tp("cyl", 0, .04, 0, .3, .08, .3, C.stone);
+    const heart = new THREE.Mesh(hg, new THREE.MeshStandardMaterial({ color:"#6fa356", roughness:.85 }));
+    heart.position.set(spot.x, spot.y + .9, spot.z); heart.castShadow = heart.receiveShadow = true; heart.userData.sign = { island:s.index }; scene.add(heart); signMeshes.push(heart);
+    const hr = mulberry32(14);
+    for (let k = 0; k < 16; k++) {
+      const a = hr() * Math.PI * 2, rr = Math.sqrt(hr()) * .32, px = Math.cos(a) * rr, py = Math.sin(a) * rr * .9 + .03;
+      maker(kit, baseM(spot.x + px, spot.y + .9 + py, spot.z + .19), null)("sphere", 0, 0, 0, .06, .06, .04, ["#f2b5c6", "#ec8fae", "#fff0f4"][k % 3]);
+    }
+    s.heart = spot;
+  }
 
   // ---------- 小彩蛋:洋流飄帶蝴蝶結(每座島一條,碼頭一條) ----------
   const ribbonTex = (() => {
@@ -1474,7 +1560,7 @@ async function main() {
     T.clone().addScaledVector(D, -.35).addScaledVector(P, -.66), T.clone().addScaledVector(D, 4).addScaledVector(P, 1.4),
     T.clone().addScaledVector(D, 9).addScaledVector(P, 3.2)].map(v => v.setY(WATER_Y)), true);
   const ferryLen = ferryCurve.getLength(), DOCK_U = 2 / 5;
-  const ferries = [0, .5].map((u0, i) => {
+  const ferries = [0, .25, .5, .75].map((u0, i) => {
     const g = new THREE.Group();
     g.add(mesh(G.rbox, boatMat("#f4ebdd"), 0, .12, 0, .6, .2, 1.3));
     g.add(mesh(G.box, boatMat(hb.color), 0, .2, 0, .62, .05, 1.32));
@@ -1490,14 +1576,119 @@ async function main() {
   const _ft = new V3();
   function placeFerry(g, dt) {
     const d = g.userData;
+    const queued = d.u > DOCK_U - .07 && d.u < DOCK_U && ferries.some(o => o !== g && o.userData.wait > 0);
     if (d.wait > 0) d.wait -= dt;
-    else if (dt > 0) {
+    else if (dt > 0 && !queued) {
       const prev = d.u; d.u = (d.u + dt * .34 / ferryLen) % 1;
       if (prev < DOCK_U && d.u >= DOCK_U) { d.u = DOCK_U; d.wait = 3.5; addLog("arrive", `渡輪靠岸,${3} 位訪客從${hb.name}上岸`, "f-visit"); }
     }
     ferryCurve.getPoint(d.u, g.position); ferryCurve.getTangent(d.u, _ft);
     g.position.y = WATER_Y + .02 + Math.sin(state.time * 1.6 + d.u * 20) * .02; g.rotation.y = Math.atan2(_ft.x, _ft.z);
   }
+
+  // 訪客的小船:在碼頭外海繞圈
+  const skiffCols = ["#db6a41", "#58a6a6", "#fcea8b", "#6f7fb5"];
+  const skiffs = skiffCols.map((col, i) => {
+    const g = new THREE.Group();
+    g.add(mesh(G.rbox, boatMat(col), 0, .06, 0, .32, .12, .7)); g.add(mesh(G.box, boatMat(C.cream), 0, .12, 0, .24, .03, .56));
+    g.add(mesh(G.cyl, boatMat("#fcea8b"), 0, .2, -.05, .1, .14, .1)); g.add(mesh(G.sphere, boatMat("#f3d2b8"), 0, .32, -.05, .11, .11, .11));
+    g.add(mesh(G.dome, boatMat(["#2f7fa8", "#db6a41", "#71806a", "#f2b5c6"][i]), 0, .34, -.05, .12, .07, .12));
+    g.add(mesh(G.cyl, boatMat(C.ink), 0, .3, .26, .012, .34, .012)); g.add(mesh(G.box, boatMat(col), .05, .42, .26, .1, .06, .005));
+    g.userData = { a:i * 1.6, r:1.2 + (i % 2) * .5, speed:(.18 + i * .05) * (i % 2 ? -1 : 1), c:harbor.tip.clone().addScaledVector(hDir, i % 2 ? 4.6 : 1.8).addScaledVector(hPerp, i < 2 ? -5.6 : 5) };
+    scene.add(g); return g;
+  });
+  function placeSkiff(g) { const u = g.userData, x = u.c.x + Math.cos(u.a) * u.r, z = u.c.z + Math.sin(u.a) * u.r * .7;
+    g.position.set(x, WATER_Y + .01 + Math.sin(state.time * 2 + u.a) * .015, z);
+    g.rotation.set(0, Math.atan2(-Math.sin(u.a) * Math.sign(u.speed), Math.cos(u.a) * .7 * Math.sign(u.speed)), Math.sin(state.time * 1.8 + u.a) * .06); }
+
+  // 水花(海豚與飛魚落水時)
+  const splashGeo = new THREE.RingGeometry(.6, 1, 28).rotateX(-Math.PI / 2), splashes = [];
+  for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(splashGeo, new THREE.MeshBasicMaterial({ color:"#ffffff", transparent:true, opacity:0, depthWrite:false })); m.visible = false; scene.add(m); splashes.push({ m, t:9 }); }
+  let splashIdx = 0;
+  function splash(x, z, size) { const sp = splashes[splashIdx++ % splashes.length]; sp.t = 0; sp.size = size; sp.m.position.set(x, WATER_Y + .015, z); sp.m.visible = true; }
+  // 海豚:兩隻一組,在群島外圍躍出水面
+  const dolMat = new THREE.MeshStandardMaterial({ color:"#7f98ad", roughness:.45 }), bellyMat = new THREE.MeshStandardMaterial({ color:"#dfe7ec", roughness:.5 });
+  function makeDolphin() {
+    const g = new THREE.Group();
+    g.add(mesh(G.sphere, dolMat, 0, 0, 0, .3, .26, .9)); g.add(mesh(G.sphere, bellyMat, 0, -.05, .04, .22, .16, .7));
+    g.add(mesh(G.cone, dolMat, 0, .01, .5, .1, .22, .1, Math.PI / 2)); g.add(mesh(G.cone, dolMat, 0, .17, -.05, .05, .2, .2, -.4));
+    g.add(mesh(G.cone, dolMat, 0, 0, -.46, .12, .2, .12, -Math.PI / 2)); g.add(mesh(G.box, dolMat, 0, 0, -.56, .34, .025, .12));
+    for (const sx of [-1, 1]) g.add(mesh(G.box, dolMat, sx * .15, -.07, .12, .16, .02, .08, 0, sx * .5));
+    g.visible = false; scene.add(g); return g;
+  }
+  const dr = mulberry32(88);
+  const pods = [0, 1, 2].map(i => ({ ds:[makeDolphin(), makeDolphin()], t:-2 - i * 3.3, dur:1.5, start:new V3(), dir:new V3() }));
+  function updatePods(dt) {
+    for (const pod of pods) {
+      pod.t += dt;
+      if (pod.t > pod.dur + .5 + 4 + dr() * 0) {
+        const a = dr() * Math.PI * 2, rr = 10 + dr() * 6, h = dr() * Math.PI * 2;
+        pod.start.set(center.x + Math.cos(a) * rr * 1.25, WATER_Y, center.z + Math.sin(a) * rr); pod.dir.set(Math.cos(h), 0, Math.sin(h)); pod.t = -dr() * 3;
+      }
+      pod.ds.forEach((d, k) => {
+        const s0 = (pod.t - k * .35) / pod.dur;
+        if (s0 < 0 || s0 > 1) { if (d.visible && s0 > 1) splash(d.position.x, d.position.z, .5); d.visible = false; return; }
+        if (!d.visible) splash(pod.start.x + pod.dir.x * 0 + pod.dir.z * k * .5, pod.start.z - pod.dir.x * k * .5, .45);
+        d.visible = true;
+        const off = new V3(pod.dir.z, 0, -pod.dir.x).multiplyScalar(k * .5);
+        d.position.copy(pod.start).addScaledVector(pod.dir, s0 * 3).add(off); d.position.y = WATER_Y - .25 + Math.sin(s0 * Math.PI) * 1.25;
+        d.rotation.set(-Math.atan2(Math.cos(s0 * Math.PI) * Math.PI * 1.25, 3), Math.atan2(pod.dir.x, pod.dir.z), 0, "YXZ");
+      });
+    }
+  }
+  // 飛魚:四條一群貼著海面滑翔
+  const fishMat = new THREE.MeshStandardMaterial({ color:"#9fc3e0", roughness:.3, metalness:.3 }), finMat = new THREE.MeshStandardMaterial({ color:"#d6ecff", roughness:.4, transparent:true, opacity:.85, side:THREE.DoubleSide });
+  const schools = [0, 1].map(i => {
+    const fish = [0, 1, 2, 3].map(() => { const g = new THREE.Group(); g.add(mesh(G.sphere, fishMat, 0, 0, 0, .07, .07, .26));
+      for (const sx of [-1, 1]) g.add(mesh(G.box, finMat, sx * .1, .01, .02, .2, .005, .1, 0, 0)); g.add(mesh(G.box, finMat, 0, 0, -.15, .08, .005, .07));
+      g.visible = false; scene.add(g); return g; });
+    return { fish, t:-4 - i * 4, start:new V3(), dir:new V3(), offs:fish.map(() => [dr() * .8 - .4, dr() * .4, dr() * .5]) };
+  });
+  function updateSchools(dt) {
+    for (const sc of schools) {
+      sc.t += dt;
+      if (sc.t > 2.4) { const a = dr() * Math.PI * 2, rr = 7 + dr() * 7, h = dr() * Math.PI * 2;
+        sc.start.set(center.x + Math.cos(a) * rr * 1.3, 0, center.z + Math.sin(a) * rr); sc.dir.set(Math.cos(h), 0, Math.sin(h)); sc.t = -3 - dr() * 4; }
+      sc.fish.forEach((f, k) => {
+        const [lx, lt, lz] = sc.offs[k], s0 = (sc.t - lt) / 1.8;
+        if (s0 < 0 || s0 > 1) { if (f.visible) splash(f.position.x, f.position.z, .18); f.visible = false; return; }
+        f.visible = true; const side = new V3(sc.dir.z, 0, -sc.dir.x);
+        f.position.copy(sc.start).addScaledVector(sc.dir, s0 * 4.5 + lz).addScaledVector(side, lx);
+        f.position.y = WATER_Y + .05 + Math.sin(s0 * Math.PI) * .45; f.rotation.set(-Math.cos(s0 * Math.PI) * .35, Math.atan2(sc.dir.x, sc.dir.z), 0, "YXZ");
+        f.children[1].rotation.z = Math.sin(state.time * 30 + k) * .25; f.children[2].rotation.z = -f.children[1].rotation.z;
+      });
+    }
+  }
+  // 直升機:偶爾從天空飛過
+  const heli = new THREE.Group();
+  {
+    const bm = boatMat("#db6a41"), wm = boatMat("#fff8f4"), dk = boatMat(C.ink);
+    heli.add(mesh(G.sphere, bm, 0, 0, 0, .7, .6, 1.0)); heli.add(mesh(G.sphere, boatMat("#86a8a6"), 0, .06, .28, .5, .4, .5));
+    heli.add(mesh(G.cyl, bm, 0, .08, -.85, .12, 1.1, .12, Math.PI / 2)); heli.add(mesh(G.box, wm, 0, .25, -1.38, .04, .35, .2));
+    for (const sx of [-.28, .28]) { heli.add(mesh(G.box, dk, sx, -.42, 0, .04, .04, .95)); heli.add(mesh(G.box, dk, sx, -.34, .15, .03, .16, .03)); heli.add(mesh(G.box, dk, sx, -.34, -.15, .03, .16, .03)); }
+    heli.add(mesh(G.cyl, dk, 0, .36, 0, .06, .14, .06));
+    const rotor = new THREE.Group(); rotor.position.set(0, .44, 0); rotor.add(mesh(G.box, dk, 0, 0, 0, 2.2, .02, .1)); rotor.add(mesh(G.box, dk, 0, 0, 0, .1, .02, 2.2)); heli.add(rotor);
+    const tail = new THREE.Group(); tail.position.set(.06, .25, -1.38); tail.add(mesh(G.box, dk, 0, 0, 0, .01, .5, .05)); heli.add(tail);
+    const blink = new THREE.Mesh(G.sphere, new THREE.MeshBasicMaterial({ color:"#ff4a3d", toneMapped:false })); blink.scale.setScalar(.08); blink.position.set(0, -.3, -.2); heli.add(blink);
+    heli.userData = { rotor, tail, blink, t:-25, dur:24, from:new V3(), to:new V3() };
+    heli.scale.setScalar(.75); heli.visible = false; scene.add(heli);
+  }
+  // 每趟飛完先排好下一趟的航線,再等 30–60 秒出發
+  function heliRoute(wait) { const u = heli.userData, side = dr() > .5 ? 1 : -1, zz = center.z - 12 + dr() * 14;
+    u.from.set(center.x - 70 * side, 9 + dr() * 3, zz + (dr() - .5) * 10); u.to.set(center.x + 70 * side, 9 + dr() * 3, zz + (dr() - .5) * 10); u.t = -wait; }
+  heliRoute(20);
+  function updateHeli(dt) {
+    const u = heli.userData; u.t += dt;
+    if (u.t > u.dur) { heli.visible = false; heliRoute(30 + dr() * 30); return; }
+    if (u.t < 0) { heli.visible = false; return; }
+    if (!heli.visible) addLog("depart", "一架直升機飛過真實島上空", "");
+    heli.visible = true; const k = u.t / u.dur;
+    heli.position.lerpVectors(u.from, u.to, k); heli.position.y += Math.sin(state.time * 1.3) * .2;
+    const d = u.to.clone().sub(u.from); heli.rotation.set(.12, Math.atan2(d.x, d.z), Math.sin(state.time * .8) * .05, "YXZ");
+    u.rotor.rotation.y += dt * 28; u.tail.rotation.x += dt * 34; u.blink.visible = Math.floor(state.time * 2) % 2 === 0;
+  }
+  function updateSplashes(dt) { for (const sp of splashes) { if (sp.t > 1.2) { sp.m.visible = false; continue; } sp.t += dt; const k = sp.t / 1.2;
+    sp.m.scale.setScalar(sp.size * (.3 + k * 1.4)); sp.m.material.opacity = (1 - k) * .75; } }
 
   kit.build(); smallKit.build();
   const kitMeshes = kit.meshes;
@@ -1518,7 +1709,7 @@ async function main() {
     [1260,"22325f","445488","c0ccff",1.2,"98a8dc","685a6e",1.9,1,"5a88b2"],
     [1440,"1e2c58","3f4f80","b4c2ff",1.15,"94a2d8","64566a",1.85,1,"5a88b2"]
   ].map(k => ({ m:k[0], top:new Col("#" + k[1]), hor:new Col("#" + k[2]), sun:new Col("#" + k[3]), sunI:k[4], hs:new Col("#" + k[5]), hg:new Col("#" + k[6]), hI:k[7], night:k[8], water:new Col("#" + k[9]) }));
-  const cur = { top:new Col(), hor:new Col(), sun:new Col(), hs:new Col(), hg:new Col(), water:new Col(), deep:new Col() }, deepTint = new Col("#3f6f86");
+  const cur = { top:new Col(), hor:new Col(), sun:new Col(), hs:new Col(), hg:new Col(), water:new Col(), deep:new Col() }, deepTint = new Col("#2f74a6"), TINT_SHALLOW = new Col("#b8ece6"), TINT_MID = new Col("#4fb0c6"), TINT_ABYSS = new Col("#173f6b");
   function applyDayNight() {
     const m = state.minutes; let i = 0; while (KF[i + 1].m <= m) i++;
     const a = KF[i], b = KF[i + 1], t = (m - a.m) / (b.m - a.m), L = (x, y) => x + (y - x) * t;
@@ -1529,7 +1720,8 @@ async function main() {
     scene.fog.color.copy(cur.hor);
     hemi.color.copy(cur.hs); hemi.groundColor.copy(cur.hg); hemi.intensity = L(a.hI, b.hI);
     sun.color.copy(cur.sun); sun.intensity = L(a.sunI, b.sunI);
-    water.material.uniforms.uShallow.value.copy(cur.water); water.material.uniforms.uDeep.value.copy(cur.water).lerp(deepTint, .45);
+    water.material.uniforms.uShallow.value.copy(cur.water).lerp(TINT_SHALLOW, .25); water.material.uniforms.uMid.value.copy(cur.water).lerp(TINT_MID, .4);
+    water.material.uniforms.uDeep.value.copy(cur.water).lerp(deepTint, .55); water.material.uniforms.uAbyss.value.copy(cur.water).lerp(TINT_ABYSS, .72);
     const tm = Math.round(m / 10) * 10, ts = THREE.MathUtils.clamp((tm - 360) / 720, 0, 1);
     const az = Math.PI * (.15 + .7 * ts), el = .35 + Math.sin(ts * Math.PI) * .75;
     const dir = new V3(Math.cos(az) * Math.cos(el), Math.sin(el), .55 * Math.cos(el) + .35).normalize();
@@ -1623,7 +1815,7 @@ async function main() {
     return `<div class="eyebrow">訪客碼頭 · 接在 ${hIsl.no} ${esc(hIsl.name)}</div>
       <h2>⚓ ${esc(hb.name)}</h2><p>${esc(hb.desc)}</p>${tilesOf(hb)}
       <ul class="facts">${hb.facts.map(f => `<li>${esc(f)}</li>`).join("")}</ul>
-      <h3>上岸之後</h3><p>${ferries.length} 艘渡輪輪流靠岸;${n} 位訪客沿著 ${fl.length} 條協作線走進島內。</p>
+      <h3>上岸之後</h3><p>${ferries.length} 艘渡輪輪流靠岸,${skiffs.length} 艘訪客小船在外海繞;${n} 位訪客沿著 ${fl.length} 條協作線走進島內。</p>
       <div class="chips">${fl.map(flowChip).join("")}${islandChip(hIsl)}</div>`;
   }
   function islandCard(s) {
@@ -1764,7 +1956,7 @@ async function main() {
     const r = renderer.domElement.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
     ray.setFromCamera(ndc, camera);
     walkerMeshes.body.boundingSphere = null; walkerMeshes.head.boundingSphere = null;
-    const targets = [walkerMeshes.body, walkerMeshes.head, ...flows.filter(f => f.tube.visible).map(f => f.tube), ...kitMeshes, ...islandTops, ...ferries];
+    const targets = [walkerMeshes.body, walkerMeshes.head, ...flows.filter(f => f.tube.visible).map(f => f.tube), ...signMeshes, ...kitMeshes, ...islandTops, ...ferries];
     const hitBow = ray.intersectObjects(bowMeshes, false)[0];
     if (hitBow) { const near = ray.intersectObjects(targets, false)[0]; if (!near || near.distance > hitBow.distance - .05) return selectBow(hitBow.object.userData.bow); }
     const hit0 = ray.intersectObjects(ferries, true)[0];
@@ -1778,6 +1970,7 @@ async function main() {
       if (own?.type === "item") return selectItem(own.id); if (own?.type === "island") return selectIsland(own.i); if (own?.type === "harbor") return selectHarbor();
       if (own?.type === "beacon") return selectBeacon(); return; }
     if (o.userData.harbor) return selectHarbor();
+    if (o.userData.sign) { const t = o.userData.sign; if (t.harbor) return selectHarbor(); if (t.beacon) return selectBeacon(); return selectIsland(t.island); }
     if (o.userData.island != null) return selectIsland(o.userData.island);
   });
 
@@ -1909,7 +2102,7 @@ async function main() {
   camera.position.copy(overviewPos()); controls.target.copy(overviewTarget());
 
   // ---------- 主迴圈 ----------
-  applyDayNight(); poseWalkers(); boats.forEach(placeBoat); ferries.forEach(f => placeFerry(f, 0)); updateBulbs();
+  applyDayNight(); poseWalkers(); boats.forEach(placeBoat); ferries.forEach(f => placeFerry(f, 0)); skiffs.forEach(placeSkiff); updateBulbs();
   let last = performance.now(), frame = 0, smallVisible = true;
   function loop(now) {
     requestAnimationFrame(loop);
@@ -1922,6 +2115,8 @@ async function main() {
       clouds.forEach(c => { c.position.x += c.userData.speed * dt; if (c.position.x > center.x + 75) c.position.x = center.x - 75; });
       boats.forEach(b => { b.userData.a += b.userData.speed * dt; placeBoat(b); });
       ferries.forEach(f => placeFerry(f, dt));
+      skiffs.forEach(g => { g.userData.a += g.userData.speed * dt; placeSkiff(g); });
+      updatePods(dt); updateSchools(dt); updateHeli(dt); updateSplashes(dt);
       checkFireworkClock(dt);
       spMat.uniforms.uTime.value = state.time; beam.rotation.y += dt * .7;
       bows.forEach(b => b.tails.forEach((t, k) => { t.rotation.z = Math.sin(state.time * 2.2 + b.phase + k * 1.3) * .14; t.rotation.x = Math.sin(state.time * 1.7 + b.phase) * .1; }));
