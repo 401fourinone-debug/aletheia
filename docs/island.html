@@ -993,7 +993,8 @@ async function main() {
     el.addEventListener("click", ev => { ev.stopPropagation(); selectIsland(s.index); });
     const lab = new CSS2DObject(el); lab.position.set(x, ty - .05, z + INR + .1); scene.add(lab);
     s.label = el; el.hidden = true;
-    nameBoard(new V3(x, ty, z + 1.5), 0, s.no, s.name, s.color, { island:s.index }, .5, 1.2);
+    nameBoard(new V3(x, ty, z + 1.52), 0, s.no, s.name, s.color, { island:s.index }, .5, .72);
+    s.freeSlots = pts.slice(s.park ? 0 : others).map(p => new V3(x + p.x, ty, z + p.z));
   }
 
   // ---------- 橋 ----------
@@ -1056,7 +1057,7 @@ async function main() {
     el.innerHTML = `<em>⚓</em><span>${esc(hb.name)}</span>`;
     el.addEventListener("click", ev => { ev.stopPropagation(); selectHarbor(); });
     const lab = new CSS2DObject(el); lab.position.copy(harbor.tip).setY(pierY + .05).addScaledVector(hPerp, .5); scene.add(lab); el.hidden = true;
-    nameBoard(harbor.root.clone().addScaledVector(hDir, .55).addScaledVector(hPerp, -.62).setY(WATER_Y + .35), 0, "港", hb.name, hb.color, { harbor:true }, 1.0);
+    nameBoard(harbor.root.clone().addScaledVector(hDir, .55).addScaledVector(hPerp, -.62).setY(WATER_Y + .35), 0, "港", hb.name, hb.color, { harbor:true }, 1.0, .75);
     harbor.label = el;
   }
 
@@ -1074,7 +1075,7 @@ async function main() {
     el.innerHTML = `<em>燈</em><span>${esc(bk.name)}</span>`;
     el.addEventListener("click", ev => { ev.stopPropagation(); selectBeacon(); });
     const lab = new CSS2DObject(el); lab.position.set(b.x, beacon.lamp.y + .75, b.z); scene.add(lab); beacon.label = el; el.hidden = true;
-    nameBoard(new V3(b.x, WATER_Y + .46, b.z + .62), 0, "燈", bk.name, bk.color, { beacon:true }, .5);
+    nameBoard(new V3(b.x, WATER_Y + .46, b.z + .62), 0, "燈", bk.name, bk.color, { beacon:true }, .5, .75);
   }
   const beamMat = new THREE.ShaderMaterial({ transparent:true, depthWrite:false, side:THREE.DoubleSide, blending:THREE.AdditiveBlending,
     uniforms:{ uOpacity:{ value:0 }, uColor:{ value:new Col("#fff1c4") } },
@@ -1086,11 +1087,11 @@ async function main() {
   beam.visible = false; scene.add(beam);
 
   // ---------- 路牌:每座橋頭立一支箭頭,指向對岸的島 ----------
-  const arrowTexCache = {};
+  const arrowTexCache = {}, signSpots = [];
   function signpost(from, dirV, dest) {
     const key = dest.name, ry = Math.atan2(-dirV.z, dirV.x), side = new V3(-dirV.z, 0, dirV.x);
     arrowTexCache[key] ||= [arrowTex(dest.name, dest.color, false), arrowTex(dest.name, dest.color, true)];
-    const base = from.clone().addScaledVector(dirV, MID_R - .3).addScaledVector(side, .24);
+    const base = from.clone().addScaledVector(dirV, MID_R - .3).addScaledVector(side, .24); signSpots.push(base);
     const bp = maker(kit, baseM(base.x, base.y, base.z), null);
     bp("cyl", 0, .24, 0, .035, .48, .035, C.wood); bp("sphere", 0, .49, 0, .05, .05, .05, C.wood);
     bp("box", .2 * Math.cos(ry), .38, -.2 * Math.sin(ry), .52, .14, .02, "#8a6248", ry);
@@ -1106,6 +1107,30 @@ async function main() {
     signpost(A.pos, d, B); signpost(B.pos, d.clone().negate(), A);
   }
   signpost(hIsl.pos, hDir, harbor);
+
+  // ---------- 多種一些樹:空出來的格子、島的前角、海上小島 ----------
+  {
+    const tr2 = mulberry32(515), kinds = { conifer:["conifer", "round"], sakura:["sakura", "round"], fruit:["fruit", "round"], palm:["palm", "round"], willow:["willow", "cypress"], round:["round", "cypress"], cypress:["cypress", "round"] };
+    const clear = (v, r) => !signSpots.some(sp => sp.distanceTo(v) < r) && !items.some(it => it.pos.distanceTo(v) < it.scale * .45 + r * .6);
+    for (const s of islands) {
+      if (s.park) continue;
+      const own = { type:"island", i:s.index }, spots = [...(s.freeSlots || [])];
+      for (const deg of [20, 160, 200, 340]) { const a = deg * Math.PI / 180; spots.push(new V3(s.pos.x + Math.cos(a) * 1.32, s.top, s.pos.z + Math.sin(a) * 1.32)); }
+      let n = 0;
+      for (const v of spots) {
+        if (n >= 4) break;
+        const fx = v.x - s.pos.x, fz = v.z - s.pos.z;
+        if (fz > 1.05 && Math.abs(fx) < .6) continue;              // 立牌前面留空
+        if (s.heart && Math.hypot(v.x - s.heart.x, v.z - s.heart.z) < .55) continue;
+        if (!clear(v, .3)) continue;
+        tree(maker(kit, baseM(v.x, s.top, v.z, .42 + tr2() * .16, tr2() * 6), own), kinds[s.tree][n % 2], tr2); n++;
+      }
+    }
+    // 碼頭邊與燈塔小島
+    for (const [dd, pp] of [[.15, .85], [.4, -.85]]) { const v = harbor.root.clone().addScaledVector(hDir, -.9 + dd).addScaledVector(hPerp, pp); v.y = hIsl.top;
+      if (clear(v, .3)) tree(maker(kit, baseM(v.x, v.y, v.z, .5, tr2() * 6), { type:"island", i:hIsl.index }), "palm", tr2); }
+    const bp0 = beacon.pos; for (const [dx, dz] of [[-.55, -.2], [.5, .25]]) tree(maker(kit, baseM(bp0.x + dx, WATER_Y + .32, bp0.z + dz, .38), null), "conifer", tr2);
+  }
 
   // ---------- 安全原則的愛心樹 ----------
   {
@@ -1405,6 +1430,44 @@ async function main() {
       float core = smoothstep(.5, 0., r); gl_FragColor = vec4(vC * (.7 + core * 1.3), vA * core); }` });
   const fwPoints = new THREE.Points(fwGeo, fwMat); fwPoints.frustumCulled = false; fwPoints.renderOrder = 6; scene.add(fwPoints);
   const flash = new THREE.PointLight(0xffd25e, 0, 16, 1.6); scene.add(flash);
+  // ---------- YURI:站在協議本部大門前 ----------
+  const yuri = new THREE.Group();
+  {
+    const hq = islandById["hq"], ym = c => new THREE.MeshStandardMaterial({ color:c, roughness:.7 });
+    const skin = ym("#f3d2b8"), top = ym("#db6a41"), pants = ym("#3b4660"), hair = ym("#2e2320"), scarf = ym("#fcea8b"), shoe = ym("#211d1d");
+    const add = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; m.userData.yuri = true; yuri.add(m); return m; };
+    for (const sx of [-.032, .032]) { add(wGeo.leg, pants, sx, .065, 0); add(G.sphere, shoe, sx, .012, .012, .05, .03, .07); }
+    add(wGeo.body, top, 0, .18, 0); add(G.torus, scarf, 0, .245, 0, .13, .13, .13).rotation.x = Math.PI / 2;
+    const armL = new THREE.Group(), armR = new THREE.Group(); armL.position.set(-.075, .225, 0); armR.position.set(.075, .225, 0); yuri.add(armL, armR);
+    for (const [g, sx] of [[armL, -1], [armR, 1]]) { const a = new THREE.Mesh(wGeo.arm, top); a.position.y = -.045; a.castShadow = true; a.userData.yuri = true; g.add(a);
+      const h = new THREE.Mesh(G.sphere, skin); h.scale.setScalar(.04); h.position.y = -.095; h.userData.yuri = true; g.add(h); }
+    add(wGeo.head, skin, 0, .305, 0); add(G.sphere, hair, 0, .33, -.012, .165, .13, .16); add(G.sphere, hair, 0, .29, -.045, .16, .12, .1);
+    for (const sx of [-.026, .026]) add(wGeo.eye, ym(C.ink), sx, .305, .068);
+    add(G.box, ym("#d4655a"), 0, .278, .072, .022, .006, .004);
+    for (const sx of [-.045, .045]) add(G.sphere, ym("#f2a7a0"), sx, .285, .062, .022, .012, .008);
+    // 名牌
+    const c = document.createElement("canvas"); c.width = 256; c.height = 96; const g2 = c.getContext("2d");
+    g2.fillStyle = "#211d1d"; g2.beginPath(); g2.roundRect(4, 8, 248, 80, 40); g2.fill();
+    g2.fillStyle = "#fcea8b"; g2.font = `900 54px ui-monospace,Menlo,monospace`; g2.textAlign = "center"; g2.textBaseline = "middle"; g2.fillText("YURI", 128, 50);
+    const tt = new THREE.CanvasTexture(c); tt.colorSpace = THREE.SRGBColorSpace;
+    const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map:tt, depthWrite:false })); tag.scale.set(.2, .075, 1); tag.position.set(0, .47, 0); tag.userData.yuri = true; yuri.add(tag);
+    yuri.position.set(hq.pos.x, hq.top, hq.pos.z + .14); yuri.scale.setScalar(1.55);
+    yuri.userData = { armR, armL }; scene.add(yuri);
+    const sh = new THREE.Mesh(wGeo.shadow, new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:.22, depthWrite:false })); sh.position.set(yuri.position.x, hq.top + .004, yuri.position.z); sh.scale.setScalar(1.6); scene.add(sh);
+  }
+  const yuriMeshes = []; yuri.traverse(o => { if (o.userData.yuri) yuriMeshes.push(o); });
+  function poseYuri() {
+    const t = state.time, wave = state.reduced ? 0 : Math.sin(t * 6);
+    yuri.userData.armR.rotation.z = 2.5 + wave * .35 * (Math.sin(t * .5) > -.2 ? 1 : 0); yuri.userData.armL.rotation.z = -.1;
+    yuri.children.forEach(o => { if (o.isMesh && !o.userData.base) o.userData.base = o.position.y; });
+    yuri.rotation.y = state.reduced ? 0 : Math.sin(t * .4) * .25;
+  }
+  function selectYuri() {
+    state.sel = { type:"yuri" }; selectedOwners = new Set(); recolor(); showFlows([]); setLabels(null); clearPins();
+    openCard(`<div class="eyebrow">人物 · 協議本部大門前</div><h2>YURI</h2><p>這座島的主人。站在協議本部門口,看著小人把題目、答案、分數一趟一趟搬過來。</p>
+      <div class="chips">${islandChip(islandById["hq"])}</div>`);
+    focus(yuri.position.clone().setY(yuri.position.y + .4), [1.1, 1.3, 2.2]);
+  }
   const hqMain = itemById["hq-1"], fwOrigin = new V3(hqMain.pos.x, hqMain.pos.y + hqMain.scale * 1.45, hqMain.pos.z - .16 * hqMain.scale);
   const rockets = [], fr = mulberry32(2026);
   function fwSpawn(p, vx, vy, vz, c, life, size, drag, grav) {
@@ -1956,7 +2019,7 @@ async function main() {
     const r = renderer.domElement.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
     ray.setFromCamera(ndc, camera);
     walkerMeshes.body.boundingSphere = null; walkerMeshes.head.boundingSphere = null;
-    const targets = [walkerMeshes.body, walkerMeshes.head, ...flows.filter(f => f.tube.visible).map(f => f.tube), ...signMeshes, ...kitMeshes, ...islandTops, ...ferries];
+    const targets = [walkerMeshes.body, walkerMeshes.head, ...flows.filter(f => f.tube.visible).map(f => f.tube), ...signMeshes, ...yuriMeshes, ...kitMeshes, ...islandTops, ...ferries];
     const hitBow = ray.intersectObjects(bowMeshes, false)[0];
     if (hitBow) { const near = ray.intersectObjects(targets, false)[0]; if (!near || near.distance > hitBow.distance - .05) return selectBow(hitBow.object.userData.bow); }
     const hit0 = ray.intersectObjects(ferries, true)[0];
@@ -1970,6 +2033,7 @@ async function main() {
       if (own?.type === "item") return selectItem(own.id); if (own?.type === "island") return selectIsland(own.i); if (own?.type === "harbor") return selectHarbor();
       if (own?.type === "beacon") return selectBeacon(); return; }
     if (o.userData.harbor) return selectHarbor();
+    if (o.userData.yuri) return selectYuri();
     if (o.userData.sign) { const t = o.userData.sign; if (t.harbor) return selectHarbor(); if (t.beacon) return selectBeacon(); return selectIsland(t.island); }
     if (o.userData.island != null) return selectIsland(o.userData.island);
   });
@@ -2102,7 +2166,7 @@ async function main() {
   camera.position.copy(overviewPos()); controls.target.copy(overviewTarget());
 
   // ---------- 主迴圈 ----------
-  applyDayNight(); poseWalkers(); boats.forEach(placeBoat); ferries.forEach(f => placeFerry(f, 0)); skiffs.forEach(placeSkiff); updateBulbs();
+  applyDayNight(); poseWalkers(); boats.forEach(placeBoat); ferries.forEach(f => placeFerry(f, 0)); skiffs.forEach(placeSkiff); poseYuri(); updateBulbs();
   let last = performance.now(), frame = 0, smallVisible = true;
   function loop(now) {
     requestAnimationFrame(loop);
@@ -2116,7 +2180,7 @@ async function main() {
       boats.forEach(b => { b.userData.a += b.userData.speed * dt; placeBoat(b); });
       ferries.forEach(f => placeFerry(f, dt));
       skiffs.forEach(g => { g.userData.a += g.userData.speed * dt; placeSkiff(g); });
-      updatePods(dt); updateSchools(dt); updateHeli(dt); updateSplashes(dt);
+      updatePods(dt); updateSchools(dt); updateHeli(dt); updateSplashes(dt); poseYuri();
       checkFireworkClock(dt);
       spMat.uniforms.uTime.value = state.time; beam.rotation.y += dt * .7;
       bows.forEach(b => b.tails.forEach((t, k) => { t.rotation.z = Math.sin(state.time * 2.2 + b.phase + k * 1.3) * .14; t.rotation.x = Math.sin(state.time * 1.7 + b.phase) * .1; }));
