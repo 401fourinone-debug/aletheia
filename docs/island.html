@@ -176,6 +176,22 @@ dl.kv dt { color:var(--muted); } dl.kv dd { margin:0; font-weight:700; }
 #intro li b { display:block; }
 #intro li small { color:var(--muted); }
 .sheet-handle { display:none; }
+body.film .panel, body.film #tools, body.film #hudToggle, body.film #intro, body.film .labels { display:none !important; }
+#film { position:fixed; inset:0; z-index:60; pointer-events:none; font-family:"Noto Sans TC","PingFang TC","WenQuanYi Zen Hei",sans-serif; color:#fff; }
+#film .mark { position:absolute; left:42px; top:38px; font:800 22px/1 "Noto Sans TC",sans-serif; letter-spacing:4px; text-shadow:0 2px 10px #0006; }
+#film .mark span { color:#ffd25e; letter-spacing:2px; }
+#film .cap { position:absolute; left:0; right:0; bottom:0; padding:120px 60px 70px; text-align:center; background:linear-gradient(transparent, #0b1a2ccc); opacity:0; }
+#film .cap small { display:inline-block; margin-bottom:14px; padding:6px 16px; border-radius:999px; background:#db6a41; font:800 24px/1.2 "Noto Sans TC",sans-serif; letter-spacing:3px; }
+#film .cap b { display:block; white-space:pre-line; font:900 52px/1.35 "Noto Sans TC",sans-serif; text-shadow:0 3px 18px #0009; text-wrap:balance; }
+#film .title, #film .end { position:absolute; inset:0; display:grid; place-content:center; text-align:center; gap:18px; opacity:0;
+  background:radial-gradient(closest-side, #0b1a2c99, transparent); }
+#film .title small { font:800 30px/1.3 "Noto Sans TC",sans-serif; letter-spacing:6px; text-shadow:0 2px 12px #0008; }
+#film .title b { font:900 128px/1.05 "Noto Sans TC",sans-serif; letter-spacing:-2px; text-shadow:0 6px 30px #0009; }
+#film .title b span, #film .end b span { color:#ffd25e; }
+#film .end b { font:900 96px/1.1 "Noto Sans TC",sans-serif; text-shadow:0 6px 30px #000a; }
+#film .end p { margin:0; font:800 36px/1.4 "Noto Sans TC",sans-serif; text-shadow:0 3px 14px #000a; }
+#film .end small { font:600 26px/1.3 ui-monospace,Menlo,monospace; color:#ffd25e; letter-spacing:1px; }
+#film .fade { position:absolute; inset:0; background:#000; opacity:0; }
 
 @media (max-width:1180px) { #log { right:auto; left:max(372px, calc(16px + env(safe-area-inset-left, 0px))); top:auto; bottom:96px; max-height:30vh; } }
 @media (max-width:800px) {
@@ -583,9 +599,9 @@ async function main() {
         float n = vnoise(vW.xz * .09 + vec2(uTime * .02, 0.)) * .6 + vnoise(vW.xz * .27 - vec2(0., uTime * .03)) * .4;
         float dd = d + (n - .5) * 7.;
         // 四層藍:淺綠藍 → 湖水藍 → 深藍 → 海溝藍
-        vec3 c = mix(uShallow, uMid, smoothstep(4., 10., dd));
-        c = mix(c, uDeep, smoothstep(9., 20., dd));
-        c = mix(c, uAbyss, smoothstep(19., 45., dd));
+        vec3 c = mix(uShallow, uMid, smoothstep(3.5, 8., dd));
+        c = mix(c, uDeep, smoothstep(7., 15., dd));
+        c = mix(c, uAbyss, smoothstep(14., 34., dd));
         // 等深線般的淡色帶
         float band = smoothstep(.0, .06, abs(fract(dd * .18) - .5) - .44);
         c += band * .035 * (1. - smoothstep(30., 60., dd));
@@ -1793,7 +1809,7 @@ async function main() {
     [1260,"22325f","445488","c0ccff",1.2,"98a8dc","685a6e",1.9,1,"5a88b2"],
     [1440,"1e2c58","3f4f80","b4c2ff",1.15,"94a2d8","64566a",1.85,1,"5a88b2"]
   ].map(k => ({ m:k[0], top:new Col("#" + k[1]), hor:new Col("#" + k[2]), sun:new Col("#" + k[3]), sunI:k[4], hs:new Col("#" + k[5]), hg:new Col("#" + k[6]), hI:k[7], night:k[8], water:new Col("#" + k[9]) }));
-  const cur = { top:new Col(), hor:new Col(), sun:new Col(), hs:new Col(), hg:new Col(), water:new Col(), deep:new Col() }, deepTint = new Col("#2f74a6"), TINT_SHALLOW = new Col("#b8ece6"), TINT_MID = new Col("#4fb0c6"), TINT_ABYSS = new Col("#173f6b");
+  const cur = { top:new Col(), hor:new Col(), sun:new Col(), hs:new Col(), hg:new Col(), water:new Col(), deep:new Col() }, deepTint = new Col("#1d5f9e"), TINT_SHALLOW = new Col("#b8ece6"), TINT_MID = new Col("#3fa6c4"), TINT_ABYSS = new Col("#0d2c58");
   function applyDayNight() {
     const m = state.minutes; let i = 0; while (KF[i + 1].m <= m) i++;
     const a = KF[i], b = KF[i + 1], t = (m - a.m) / (b.m - a.m), L = (x, y) => x + (y - x) * t;
@@ -1805,7 +1821,7 @@ async function main() {
     hemi.color.copy(cur.hs); hemi.groundColor.copy(cur.hg); hemi.intensity = L(a.hI, b.hI);
     sun.color.copy(cur.sun); sun.intensity = L(a.sunI, b.sunI);
     water.material.uniforms.uShallow.value.copy(cur.water).lerp(TINT_SHALLOW, .25); water.material.uniforms.uMid.value.copy(cur.water).lerp(TINT_MID, .4);
-    water.material.uniforms.uDeep.value.copy(cur.water).lerp(deepTint, .55); water.material.uniforms.uAbyss.value.copy(cur.water).lerp(TINT_ABYSS, .72);
+    water.material.uniforms.uDeep.value.copy(cur.water).lerp(deepTint, .7); water.material.uniforms.uAbyss.value.copy(cur.water).lerp(TINT_ABYSS, .86);
     const tm = Math.round(m / 10) * 10, ts = THREE.MathUtils.clamp((tm - 360) / 720, 0, 1);
     const az = Math.PI * (.15 + .7 * ts), el = .35 + Math.sin(ts * Math.PI) * .75;
     const dir = new V3(Math.cos(az) * Math.cos(el), Math.sin(el), .55 * Math.cos(el) + .35).normalize();
@@ -2193,8 +2209,24 @@ async function main() {
     requestAnimationFrame(loop);
     const dt = Math.max(0, Math.min((now - last) / 1000, .08)); last = now;
     const animating = !state.paused && !state.reduced;
-    if (animating) {
-      state.time += dt; state.minutes = (state.minutes + dt * 10) % 1440;
+    if (animating) { advance(dt, 10); dirty = true; }
+    if (flight) { stepFlight(now); dirty = true; }
+    if (controls.update()) dirty = true;
+    if (!dirty) return;
+    drawFrame();
+    if (++frame % 6 === 0) layoutLabels();
+    dirty = false;
+  }
+  function drawFrame() {
+    applyDayNight();
+    poseWalkers();
+    updateBulbs();
+    const near = FILM || camera.position.distanceTo(controls.target) < 26;
+    if (near !== smallVisible) { smallVisible = near; smallKit.meshes.forEach(m => m.visible = near); }
+    renderer.render(scene, camera); labelRenderer.render(scene, camera);
+  }
+  function advance(dt, clockRate) {
+      state.time += dt; state.minutes = (state.minutes + dt * clockRate) % 1440;
       updateWalkers(dt);
       water.material.uniforms.uTime.value = state.time; lineMats.forEach(m => m.uniforms.uTime.value = state.time);
       clouds.forEach(c => { c.position.x += c.userData.speed * dt; if (c.position.x > center.x + 75) c.position.x = center.x - 75; });
@@ -2206,25 +2238,94 @@ async function main() {
       spMat.uniforms.uTime.value = state.time; beam.rotation.y += dt * .7;
       bows.forEach(b => b.tails.forEach((t, k) => { t.rotation.z = Math.sin(state.time * 2.2 + b.phase + k * 1.3) * .14; t.rotation.x = Math.sin(state.time * 1.7 + b.phase) * .1; }));
       if (rockets.length || fw.live || flash.intensity) updateFireworks(dt);
-      dirty = true;
-    }
-    if (flight) { stepFlight(now); dirty = true; }
-    if (controls.update()) dirty = true;
-    if (!dirty) return;
-    applyDayNight();
-    poseWalkers();
-    updateBulbs();
-    const near = camera.position.distanceTo(controls.target) < 26;
-    if (near !== smallVisible) { smallVisible = near; smallKit.meshes.forEach(m => m.visible = near); }
-    renderer.render(scene, camera); labelRenderer.render(scene, camera);
-    if (++frame % 6 === 0) layoutLabels();
-    dirty = false;
   }
-  requestAnimationFrame(loop);
-  requestAnimationFrame(() => {
-    $("#loader").classList.add("done");
-    if (!store.get("aletheia-island-intro")) { $("#intro").hidden = false; $("#introGo").focus(); }
-  });
+  const FILM = new URLSearchParams(location.search).has("film");
+  if (FILM) setupFilm();
+  else {
+    requestAnimationFrame(loop);
+    requestAnimationFrame(() => {
+      $("#loader").classList.add("done");
+      if (!store.get("aletheia-island-intro")) { $("#intro").hidden = false; $("#introGo").focus(); }
+    });
+  }
+
+  // ---------- 錄影模式(?film):逐格算出鏡頭、時間與字幕,給影片輸出用 ----------
+  function setupFilm() {
+    document.body.classList.add("film");
+    const fl = document.createElement("link"); fl.rel = "stylesheet"; fl.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;900&display=swap"; document.head.append(fl);
+    const ov = document.createElement("div"); ov.id = "film";
+    ov.innerHTML = `<div class="mark">ALETHEIA <span>真實島</span></div>
+      <div class="cap"><small></small><b></b></div>
+      <div class="title"><small>一份 AI 誠實協議的運作機制</small><b>Aletheia<br><span>真實島</span></b></div>
+      <div class="end"><b>Aletheia <span>真實島</span></b><p>每一版都公開測評,包括變差的部分</p><small>401fourinone-debug.github.io/aletheia</small></div>
+      <div class="fade"></div>`;
+    document.body.append(ov);
+    const capS = ov.querySelector(".cap small"), capB = ov.querySelector(".cap b"), cap = ov.querySelector(".cap");
+    const titleEl = ov.querySelector(".title"), endEl = ov.querySelector(".end"), fadeEl = ov.querySelector(".fade");
+    state.tog.fireworks = false; state.reduced = false; lineMats.forEach(m => m.uniforms.uStatic.value = 0);
+    heliRoute(5.5); $("#loader").classList.add("done");
+    const FPS = 24, DUR = 48;
+    const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2, clamp01 = x => Math.max(0, Math.min(1, x));
+    const seg = (t, a, b) => clamp01((t - a) / (b - a));
+    const rotY = (v, a) => new V3(v.x * Math.cos(a) + v.z * Math.sin(a), v.y, -v.x * Math.sin(a) + v.z * Math.cos(a));
+    const OV = new V3(.24, .33, .87).normalize();
+    const MIN = [[0, 360], [5, 400], [11, 630], [17, 650], [23, 668], [27.5, 684], [31.5, 900], [37, 1258], [44, 1266], [48, 1270]];
+    const CAPS = [
+      [5.6, 10.6, "", "一份 AI 誠實協議的運作機制\n蓋成了一座島"],
+      [11.4, 16.6, "慢動作", "小人搬著題目、答案、分數,走過 12 座島"],
+      [17.4, 22.6, "YURI", "「歡迎加入測試!」"],
+      [23.3, 25.2, "小彩蛋", "每座島都綁了一條洋流飄帶"],
+      [25.5, 27.3, "小彩蛋", "安全原則的愛心樹"],
+      [27.8, 31.2, "錯誤紀念公園", "8 個錯誤,8 尊祈禱的動物"],
+      [33.2, 36.8, "縮時", "入夜,島緣燈條與燈塔亮起"],
+      [37.6, 43.4, "21:00", "協議本部的煙火"]
+    ];
+    const CUTS = [11, 17, 23, 27.5, 31.5, 37];
+    const SHOTS = [5, 11, 17, 23, 27.5, 31.5, 37, 48];
+    const FIRE = [37.3, 37.8, 38.2, 38.9, 39.4, 40.0, 40.4, 41.0, 41.6, 42.1, 42.5, 43.2, 44.0, 44.6, 45.3, 46.0];
+    let tPrev = 0, followW = null, fired = 0, docked = false;
+    const hq = islandById["hq"], memo = islandById["memo"], safeIs = islandById["safe"];
+    const bowSafe = bows.find(b => b.host.name === safeIs.name);
+    function shot(t) {
+      if (t < 11) { const k = ease(seg(t, 0, 11)), d = 72 + (36 - 72) * k, az = .35 * k;
+        const tgt = center.clone(); return [tgt.clone().add(rotY(OV, az).multiplyScalar(d)).add(new V3(0, 6 * (1 - k), 0)), tgt]; }
+      if (t < 17) { const lt = seg(t, 11, 17);
+        if (!followW) followW = walkers.filter(w => flows[w.f].id === "f-cases" && w.dir > 0 && w.wait <= 0).sort((a, b) => Math.abs(a.s / flows[a.f].L - .3) - Math.abs(b.s / flows[b.f].L - .3))[0] || walkers[0];
+        walkerPoint(followW); const tgt = followW.pos.clone().add(new V3(0, .22, 0));
+        return [tgt.clone().add(rotY(new V3(1.5, 1.05, 2.1), -.4 + lt * .8)), tgt]; }
+      if (t < 23) { const lt = seg(t, 17, 23), tgt = yuri.position.clone().add(new V3(0, .5, 0));
+        const face = new V3(Math.sin(yuri.userData.baseRy), 0, Math.cos(yuri.userData.baseRy));
+        return [tgt.clone().add(rotY(face.multiplyScalar(2.6 - lt * .5), -.45 + lt * .7)).add(new V3(0, .95, 0)), tgt]; }
+      if (t < 25.3) { const lt = seg(t, 23, 25.3), b = bowSafe.host, f = new V3(Math.sin(b.ry), 0, Math.cos(b.ry));
+        const tgt = b.pos.clone().add(new V3(0, -.08, 0)); return [tgt.clone().add(rotY(f.multiplyScalar(1.15 - lt * .35), .3 - lt * .4)).add(new V3(0, .35, 0)), tgt]; }
+      if (t < 27.5) { const lt = seg(t, 25.3, 27.5), tgt = safeIs.heart.clone().add(new V3(0, .8, 0));
+        return [tgt.clone().add(rotY(new V3(0, .9, 3.9 - lt * .5), -.35 + lt * .6)), tgt]; }
+      if (t < 31.5) { const lt = seg(t, 27.5, 31.5), tgt = memo.pos.clone().add(new V3(0, .25, 0));
+        return [tgt.clone().add(rotY(new V3(0, 2.3, 3.4), -.7 + lt * 1.2)), tgt]; }
+      if (t < 37) { const lt = ease(seg(t, 31.5, 37)), tgt = center.clone();
+        return [tgt.clone().add(rotY(OV, -.25 + lt * .6).multiplyScalar(38 - lt * 4)), tgt]; }
+      const lt = seg(t, 37, 48), tgt = fwOrigin.clone().add(new V3(0, 1.7, 0));
+      return [tgt.clone().add(new V3(2.8 - lt * .6, .9 - lt * .2, 10.8 - lt * 1.2)), tgt];
+    }
+    function speed(t) { if (t >= 11 && t < 17) return .35; if (t >= 23 && t < 27.5) return .45; if (t >= 17 && t < 23) return .6; return 1; }
+    function minutesAt(t) { for (let i = 1; i < MIN.length; i++) if (t <= MIN[i][0]) { const [a, ma] = MIN[i - 1], [b, mb] = MIN[i]; return ma + (mb - ma) * (t - a) / (b - a); } return MIN[MIN.length - 1][1]; }
+    const opa = (t, a, b, f = .4) => clamp01(Math.min((t - a) / f, (b - t) / f));
+    window.__film = { fps:FPS, duration:DUR, frames:FPS * DUR,
+      frame(i) {
+        const t = i / FPS, dt = Math.max(0, t - tPrev); tPrev = t;
+        const steps = Math.max(1, Math.ceil(dt * speed(t) / .05));
+        for (let k = 0; k < steps; k++) advance(dt * speed(t) / steps, 0);
+        state.minutes = minutesAt(t);
+        if (t >= 17 && !docked) { docked = true; const f0 = ferries[0].userData; f0.u = DOCK_U - .012; f0.wait = 0; ferries.slice(1).forEach(f => { if (Math.abs(f.userData.u - DOCK_U) < .08) f.userData.u = (f.userData.u + .3) % 1; }); }
+        while (fired < FIRE.length && t >= FIRE[fired]) { launchFirework(["peony", "ring", "willow", "double"][fired % 4]); fired++; }
+        const [pos, tgt] = shot(t); camera.position.copy(pos); camera.lookAt(tgt); controls.target.copy(tgt);
+        const c = CAPS.find(c => t >= c[0] && t <= c[1]);
+        if (c) { capS.textContent = c[2]; capS.hidden = !c[2]; capB.textContent = c[3]; cap.style.opacity = opa(t, c[0], c[1]); } else cap.style.opacity = 0;
+        titleEl.style.opacity = opa(t, .3, 4.7, .6); endEl.style.opacity = clamp01((t - 44) / .8);
+        let f = 0; for (const x of CUTS) f = Math.max(f, 1 - Math.abs(t - x) / .22); fadeEl.style.opacity = clamp01(f);
+        drawFrame(); return t;
+      } };
+  }
 }
 </script>
 </body>
