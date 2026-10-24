@@ -1358,14 +1358,15 @@ async function main() {
   wheelBulbs.forEach((b, i) => { wbMesh.setMatrixAt(i, new THREE.Matrix4().makeTranslation(b.local.x, b.local.y, b.local.z)); wbMesh.setColorAt(i, new Col("#fff3d6")); });
   wheel.rot.add(wbMesh);
   const WB_PAL = ["#ff6b8b", "#ffb347", "#ffe66d", "#7cf29a", "#6fd6ff", "#a98bff", "#ff8fe0"].map(c => new Col(c)), _wb = new Col();
-  wheel.pause = 0; wheel.onBottom = null;
+  // moved:停靠後要再轉過一小段才重新偵測,避免浮點誤差讓同一個吊艙一直被判定「又到底了」而卡住
+  wheel.pause = 0; wheel.onBottom = null; wheel.moved = 1;
   function updateWheel(dt) {
     const prev = wheel.rot.rotation.z;
-    if (wheel.pause > 0) wheel.pause -= dt; else wheel.rot.rotation.z += dt * wheel.speed;
-    const now = wheel.rot.rotation.z, B = -Math.PI / 2;
-    if (now !== prev) for (let k = 0; k < 16; k++) { const base = k / 16 * Math.PI * 2;
-      const a0 = ((prev + base - B) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2), a1 = ((now + base - B) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-      if (a1 < a0 && dt > 0) { wheel.rot.rotation.z = now - a1 / 1; wheel.pause = 2.4; if (wheel.onBottom) wheel.onBottom(k); break; } }
+    if (wheel.pause > 0) wheel.pause -= dt; else { wheel.rot.rotation.z += dt * wheel.speed; wheel.moved += dt * wheel.speed; }
+    const now = wheel.rot.rotation.z, B = -Math.PI / 2, TAU = Math.PI * 2;
+    if (now !== prev && wheel.moved > .08) for (let k = 0; k < 16; k++) { const base = k / 16 * TAU;
+      const a0 = ((prev + base - B) % TAU + TAU) % TAU, a1 = ((now + base - B) % TAU + TAU) % TAU;
+      if (a1 < a0 && a0 - a1 > Math.PI) { wheel.rot.rotation.z = now - a1; wheel.pause = 2.4; wheel.moved = 0; if (wheel.onBottom) wheel.onBottom(k); break; } }
     wheel.gondolas.forEach(g => { g.rotation.z = -wheel.rot.rotation.z; });
     const step = Math.floor(state.time * 8), glow = Math.max(state.night || 0, .7);
     wheelBulbs.forEach((b, i) => { const on = b.ring === 1 ? (Math.floor(state.time * 2) + b.j) % 2 === 0 : (b.j + step) % 6 < 4;
@@ -1983,8 +1984,7 @@ async function main() {
   function poseYuri(dt = 0) {
     const u = yuri.userData, t = state.time, still = state.reduced;
     let heading = u.baseRy, walking = false;
-    if (FILM_MODE) { u.setBubble("歡迎加入測試!"); }
-    else {
+    {
       if (tour.wait > 0) tour.wait -= dt;
       else if (dt > 0) {
         const prev = tour.s; tour.s += dt * .3; walking = true;
@@ -2004,7 +2004,7 @@ async function main() {
       u.setBubble(tour.greet > 0 ? "嗨!辛苦了" : TOUR[tour.stop][1]);
       u.bubble.visible = tour.wait > 0 || tour.greet > 0;
     }
-    const waving = FILM_MODE || tour.wait > 0 || tour.greet > 0;
+    const waving = tour.wait > 0 || tour.greet > 0;
     if (walking && !still) tour.phase += dt * 9;
     const sw = walking && !still ? Math.sin(tour.phase) : 0;
     u.legs[0].rotation.x = sw * .5; u.legs[1].rotation.x = -sw * .5;
@@ -2779,17 +2779,17 @@ async function main() {
     const fadeEl = ov.querySelector(".fade");
     state.tog.fireworks = false; state.reduced = false; lineMats.forEach(m => m.uniforms.uStatic.value = 0);
     heliRoute(3); $("#loader").classList.add("done");
-    const FPS = 24, DUR = 64;
+    const FPS = 24, DUR = 72;
     const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2, clamp01 = x => Math.max(0, Math.min(1, x));
     const seg = (t, a, b) => clamp01((t - a) / (b - a));
     const rotY = (v, a) => new V3(v.x * Math.cos(a) + v.z * Math.sin(a), v.y, -v.x * Math.sin(a) + v.z * Math.cos(a));
     const OV = new V3(.24, .33, .87).normalize();
     const I = id => islandById[id], IT = id => itemById[id];
     const orbit = (tgt, off, a0, a1, lt) => [tgt.clone().add(rotY(off, a0 + (a1 - a0) * lt)), tgt];
-    const MIN = [[0, 360], [6, 430], [11, 600], [49, 840], [52, 900], [57, 1256], [64, 1266]];
-    const CUTS = [11, 15.5, 20.5, 24.5, 28.5, 33, 36.5, 40, 45, 49, 52, 57];
+    const MIN = [[0, 360], [6, 430], [11, 600], [49, 840], [52, 900], [57, 1256], [64, 1266], [72, 1272]];
+    const CUTS = [11, 15.5, 20.5, 24.5, 28.5, 33, 36.5, 40, 45, 49, 52, 57, 64];
     const FIRE = [57.3, 57.8, 58.3, 58.9, 59.4, 60.0, 60.5, 61.1, 61.6, 62.1, 62.6, 63.2];
-    let tPrev = 0, fired = 0, docked = false, sprayed = false;
+    let tPrev = 0, fired = 0, docked = false, sprayed = false, walkSet = false, greeted = false;
     const wheelC = wheel.rot.position.clone(), judgeC = I("judge").pos.clone().add(new V3(0, .2, .45)), bankC = I("bank").pos.clone().add(new V3(0, .25, 0));
     function shot(t) {
       if (t < 11) { const k = ease(seg(t, 0, 11)), d = 72 + (34 - 72) * k; return [center.clone().add(rotY(OV, -.35 + .7 * k).multiplyScalar(d)).add(new V3(0, 6 * (1 - k), 0)), center.clone()]; }
@@ -2800,13 +2800,18 @@ async function main() {
       if (t < 33) return orbit(I("safe").pos.clone().add(new V3(0, .45, 0)), new V3(0, 2.2, 4.2), -.45, .45, seg(t, 28.5, 33));
       if (t < 36.5) { const m = IT("r-fail"); return orbit(m.pos.clone().add(new V3(0, .6, 0)), new V3(0, .9, 3.6), .35, -.25, seg(t, 33, 36.5)); }
       if (t < 40) { const m = IT("p3"); return orbit(m.pos.clone().add(new V3(0, .65, 0)), new V3(0, .9, 3.6), -.3, .3, seg(t, 36.5, 40)); }
-      if (t < 45) { const lt = seg(t, 40, 45), tgt = yuri.position.clone().add(new V3(0, .45, 0)), face = new V3(Math.sin(yuri.userData.baseRy), 0, Math.cos(yuri.userData.baseRy));
-        return [tgt.clone().add(rotY(face.multiplyScalar(2.7 - lt * .5), -.5 + lt * .8)).add(new V3(0, 1.0, 0)), tgt]; }
+      if (t < 45) { const lt = seg(t, 40, 45), tgt = yuri.position.clone().add(new V3(0, .62, 0));
+        return [tgt.clone().add(rotY(new V3(0, 1.05, 3.0), -.6 + lt * .9)), tgt]; }
       if (t < 49) return orbit(fountain.c.clone().add(new V3(0, .35, 0)), new V3(0, 1.3, 2.6), -.4, .5, seg(t, 45, 49));
       if (t < 52) return orbit(I("coop").pos.clone().add(new V3(0, .5, 0)), new V3(0, 1.8, 3.6), .4, -.3, seg(t, 49, 52));
       if (t < 57) { const k = ease(seg(t, 52, 57)); return [center.clone().add(rotY(OV, .3 - k * .6).multiplyScalar(36 - k * 3)), center.clone()]; }
-      const lt = seg(t, 57, 64), tgt = fwOrigin.clone().add(new V3(0, 1.7, 0));
-      return [tgt.clone().add(new V3(2.8 - lt * .6, .9 - lt * .1, 10.8 + lt * 2.5)), tgt];
+      if (t < 64) { const lt = seg(t, 57, 64), tgt = fwOrigin.clone().add(new V3(0, 1.7, 0));
+        return [tgt.clone().add(new V3(2.8 - lt * .6, .9 - lt * .1, 10.8 + lt * 1.2)), tgt]; }
+      // 結尾:碼頭的 YURI「歡迎加入測試!」,鏡頭慢慢拉遠到整座島,淡出
+      const lt = seg(t, 64, 72), k = ease(seg(t, 66, 72)), face = new V3(Math.sin(yuri.userData.baseRy), 0, Math.cos(yuri.userData.baseRy));
+      const near = yuri.position.clone().add(new V3(0, .45, 0)), far = center.clone();
+      const tgt = near.clone().lerp(far, k), nearPos = near.clone().add(face.multiplyScalar(2.2)).add(new V3(0, .8, 0)), farPos = center.clone().add(rotY(OV, -.25).multiplyScalar(42));
+      return [nearPos.lerp(farPos, k), tgt];
     }
     function speed(t) { if (t >= 15.5 && t < 28.5) return .6; if (t >= 40 && t < 49) return .6; return 1; }
     function minutesAt(t) { for (let i = 1; i < MIN.length; i++) if (t <= MIN[i][0]) { const [a, ma] = MIN[i - 1], [b, mb] = MIN[i]; return ma + (mb - ma) * (t - a) / (b - a); } return MIN[MIN.length - 1][1]; }
@@ -2818,9 +2823,12 @@ async function main() {
         state.minutes = minutesAt(t);
         if (t >= 40 && !docked) { docked = true; const f0 = ferries[0].userData; f0.u = DOCK_U - .01; f0.wait = 0; ferries.slice(1).forEach(f => { if (Math.abs(f.userData.u - DOCK_U) < .08) f.userData.u = (f.userData.u + .3) % 1; }); }
         if (t >= 45 && !sprayed) { sprayed = true; fountain.t = 0; }
+        if (t >= 40 && !walkSet) { walkSet = true; tour.stop = 1; tour.s = tour.stopS[1] + .6; tour.wait = 0; tour.greet = 0; tour.greetCd = 1.2; }
+        if (t >= 42.4 && !greeted) { greeted = true; const w = walkers.slice().sort((a, b) => a.pos.distanceToSquared(yuri.position) - b.pos.distanceToSquared(yuri.position))[0]; if (w) { tour.greet = 1.8; tour.greeted = w; tour.greetCd = 4; } }
+        if (t >= 64) { tour.s = 0; tour.stop = 0; tour.wait = 5; tour.greet = 0; }
         while (fired < FIRE.length && t >= FIRE[fired]) { launchFirework(["peony", "ring", "willow", "double"][fired % 4]); fired++; }
         const [pos, tgt] = shot(t); camera.position.copy(pos); camera.lookAt(tgt); controls.target.copy(tgt);
-        let f = clamp01(1 - t / .8) + clamp01((t - 63) / 1); for (const x of CUTS) f = Math.max(f, 1 - Math.abs(t - x) / .22); fadeEl.style.opacity = clamp01(f);
+        let f = clamp01(1 - t / .8) + clamp01((t - 70.4) / 1.4); for (const x of CUTS) f = Math.max(f, 1 - Math.abs(t - x) / .22); fadeEl.style.opacity = clamp01(f);
         if (draw) drawFrame(); return t;
       } };
   }
