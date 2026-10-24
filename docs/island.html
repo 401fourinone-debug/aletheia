@@ -2773,78 +2773,54 @@ async function main() {
 
   // ---------- 錄影模式(?film):逐格算出鏡頭、時間與字幕,給影片輸出用 ----------
   function setupFilm() {
+    // 純導覽:沒有字幕、片頭片尾字卡,只有鏡頭運動與轉場
     document.body.classList.add("film");
-    const fl = document.createElement("link"); fl.rel = "stylesheet"; fl.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;900&display=swap"; document.head.append(fl);
-    const ov = document.createElement("div"); ov.id = "film";
-    ov.innerHTML = `<div class="mark">ALETHEIA <span>真實島</span></div>
-      <div class="cap"><small></small><b></b></div>
-      <div class="title"><small>一份 AI 誠實協議的運作機制</small><b>Aletheia<br><span>真實島</span></b></div>
-      <div class="end"><b>Aletheia <span>真實島</span></b><p>每一版都公開測評,包括變差的部分</p><small>401fourinone-debug.github.io/aletheia</small></div>
-      <div class="fade"></div>`;
-    document.body.append(ov);
-    const capS = ov.querySelector(".cap small"), capB = ov.querySelector(".cap b"), cap = ov.querySelector(".cap");
-    const titleEl = ov.querySelector(".title"), endEl = ov.querySelector(".end"), fadeEl = ov.querySelector(".fade");
+    const ov = document.createElement("div"); ov.id = "film"; ov.innerHTML = `<div class="fade"></div>`; document.body.append(ov);
+    const fadeEl = ov.querySelector(".fade");
     state.tog.fireworks = false; state.reduced = false; lineMats.forEach(m => m.uniforms.uStatic.value = 0);
-    heliRoute(5.5); $("#loader").classList.add("done");
-    const FPS = 24, DUR = 48;
+    heliRoute(3); $("#loader").classList.add("done");
+    const FPS = 24, DUR = 64;
     const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2, clamp01 = x => Math.max(0, Math.min(1, x));
     const seg = (t, a, b) => clamp01((t - a) / (b - a));
     const rotY = (v, a) => new V3(v.x * Math.cos(a) + v.z * Math.sin(a), v.y, -v.x * Math.sin(a) + v.z * Math.cos(a));
     const OV = new V3(.24, .33, .87).normalize();
-    const MIN = [[0, 360], [5, 400], [11, 630], [17, 650], [23, 668], [27.5, 684], [31.5, 900], [37, 1258], [44, 1266], [48, 1270]];
-    const CAPS = [
-      [5.6, 10.6, "", "一份 AI 誠實協議的運作機制\n蓋成了一座島"],
-      [11.4, 16.6, "慢動作", "小人搬著題目、答案、分數,走過 12 座島"],
-      [17.4, 22.6, "YURI", "「歡迎加入測試!」"],
-      [23.3, 25.2, "小彩蛋", "每座島都綁了一條洋流飄帶"],
-      [25.5, 27.3, "小彩蛋", "安全原則的愛心樹"],
-      [27.8, 31.2, "錯誤紀念公園", "8 個錯誤,8 尊祈禱的動物"],
-      [33.2, 36.8, "縮時", "入夜,島緣燈條與燈塔亮起"],
-      [37.6, 43.4, "21:00", "協議本部的煙火"]
-    ];
-    const CUTS = [11, 17, 23, 27.5, 31.5, 37];
-    const SHOTS = [5, 11, 17, 23, 27.5, 31.5, 37, 48];
-    const FIRE = [37.3, 37.8, 38.2, 38.9, 39.4, 40.0, 40.4, 41.0, 41.6, 42.1, 42.5, 43.2, 44.0, 44.6, 45.3, 46.0];
-    let tPrev = 0, followW = null, fired = 0, docked = false;
-    const hq = islandById["hq"], memo = islandById["memo"], safeIs = islandById["safe"];
-    const bowSafe = bows.find(b => b.host.name === safeIs.name);
+    const I = id => islandById[id], IT = id => itemById[id];
+    const orbit = (tgt, off, a0, a1, lt) => [tgt.clone().add(rotY(off, a0 + (a1 - a0) * lt)), tgt];
+    const MIN = [[0, 360], [6, 430], [11, 600], [49, 840], [52, 900], [57, 1256], [64, 1266]];
+    const CUTS = [11, 15.5, 20.5, 24.5, 28.5, 33, 36.5, 40, 45, 49, 52, 57];
+    const FIRE = [57.3, 57.8, 58.3, 58.9, 59.4, 60.0, 60.5, 61.1, 61.6, 62.1, 62.6, 63.2];
+    let tPrev = 0, fired = 0, docked = false, sprayed = false;
+    const wheelC = wheel.rot.position.clone(), judgeC = I("judge").pos.clone().add(new V3(0, .2, .45)), bankC = I("bank").pos.clone().add(new V3(0, .25, 0));
     function shot(t) {
-      if (t < 11) { const k = ease(seg(t, 0, 11)), d = 72 + (36 - 72) * k, az = .35 * k;
-        const tgt = center.clone(); return [tgt.clone().add(rotY(OV, az).multiplyScalar(d)).add(new V3(0, 6 * (1 - k), 0)), tgt]; }
-      if (t < 17) { const lt = seg(t, 11, 17);
-        if (!followW) followW = walkers.filter(w => flows[w.f].id === "f-cases" && w.dir > 0 && w.wait <= 0).sort((a, b) => Math.abs(a.s / flows[a.f].L - .3) - Math.abs(b.s / flows[b.f].L - .3))[0] || walkers[0];
-        walkerPoint(followW); const tgt = followW.pos.clone().add(new V3(0, .22, 0));
-        return [tgt.clone().add(rotY(new V3(1.5, 1.05, 2.1), -.4 + lt * .8)), tgt]; }
-      if (t < 23) { const lt = seg(t, 17, 23), tgt = yuri.position.clone().add(new V3(0, .5, 0));
-        const face = new V3(Math.sin(yuri.userData.baseRy), 0, Math.cos(yuri.userData.baseRy));
-        return [tgt.clone().add(rotY(face.multiplyScalar(2.6 - lt * .5), -.45 + lt * .7)).add(new V3(0, .95, 0)), tgt]; }
-      if (t < 25.3) { const lt = seg(t, 23, 25.3), b = bowSafe.host, f = new V3(Math.sin(b.ry), 0, Math.cos(b.ry));
-        const tgt = b.pos.clone().add(new V3(0, -.08, 0)); return [tgt.clone().add(rotY(f.multiplyScalar(1.15 - lt * .35), .3 - lt * .4)).add(new V3(0, .35, 0)), tgt]; }
-      if (t < 27.5) { const lt = seg(t, 25.3, 27.5), tgt = safeIs.heart.clone().add(new V3(0, .8, 0));
-        return [tgt.clone().add(rotY(new V3(0, .9, 3.9 - lt * .5), -.35 + lt * .6)), tgt]; }
-      if (t < 31.5) { const lt = seg(t, 27.5, 31.5), tgt = memo.pos.clone().add(new V3(0, .25, 0));
-        return [tgt.clone().add(rotY(new V3(0, 2.3, 3.4), -.7 + lt * 1.2)), tgt]; }
-      if (t < 37) { const lt = ease(seg(t, 31.5, 37)), tgt = center.clone();
-        return [tgt.clone().add(rotY(OV, -.25 + lt * .6).multiplyScalar(38 - lt * 4)), tgt]; }
-      const lt = seg(t, 37, 48), tgt = fwOrigin.clone().add(new V3(0, 1.7, 0));
-      return [tgt.clone().add(new V3(2.8 - lt * .6, .9 - lt * .2, 10.8 - lt * 1.2)), tgt];
+      if (t < 11) { const k = ease(seg(t, 0, 11)), d = 72 + (34 - 72) * k; return [center.clone().add(rotY(OV, -.35 + .7 * k).multiplyScalar(d)).add(new V3(0, 6 * (1 - k), 0)), center.clone()]; }
+      if (t < 15.5) { const tw = IT("hq-1"); return orbit(tw.pos.clone().add(new V3(0, 1.0, -.2)), new V3(0, 1.4, 4.4), -.7, .3, seg(t, 11, 15.5)); }
+      if (t < 20.5) return orbit(wheelC.clone().add(new V3(0, -.55, 0)), new V3(0, .6, 5.0), .55, -.25, seg(t, 15.5, 20.5));
+      if (t < 24.5) return orbit(bankC, new V3(0, 1.3, 2.2), -.5, .4, seg(t, 20.5, 24.5));
+      if (t < 28.5) return orbit(judgeC, new V3(0, 1.1, 2.0), .5, -.4, seg(t, 24.5, 28.5));
+      if (t < 33) return orbit(I("safe").pos.clone().add(new V3(0, .45, 0)), new V3(0, 2.2, 4.2), -.45, .45, seg(t, 28.5, 33));
+      if (t < 36.5) { const m = IT("r-fail"); return orbit(m.pos.clone().add(new V3(0, .6, 0)), new V3(0, .9, 3.6), .35, -.25, seg(t, 33, 36.5)); }
+      if (t < 40) { const m = IT("p3"); return orbit(m.pos.clone().add(new V3(0, .65, 0)), new V3(0, .9, 3.6), -.3, .3, seg(t, 36.5, 40)); }
+      if (t < 45) { const lt = seg(t, 40, 45), tgt = yuri.position.clone().add(new V3(0, .45, 0)), face = new V3(Math.sin(yuri.userData.baseRy), 0, Math.cos(yuri.userData.baseRy));
+        return [tgt.clone().add(rotY(face.multiplyScalar(2.7 - lt * .5), -.5 + lt * .8)).add(new V3(0, 1.0, 0)), tgt]; }
+      if (t < 49) return orbit(fountain.c.clone().add(new V3(0, .35, 0)), new V3(0, 1.3, 2.6), -.4, .5, seg(t, 45, 49));
+      if (t < 52) return orbit(I("coop").pos.clone().add(new V3(0, .5, 0)), new V3(0, 1.8, 3.6), .4, -.3, seg(t, 49, 52));
+      if (t < 57) { const k = ease(seg(t, 52, 57)); return [center.clone().add(rotY(OV, .3 - k * .6).multiplyScalar(36 - k * 3)), center.clone()]; }
+      const lt = seg(t, 57, 64), tgt = fwOrigin.clone().add(new V3(0, 1.7, 0));
+      return [tgt.clone().add(new V3(2.8 - lt * .6, .9 - lt * .1, 10.8 + lt * 2.5)), tgt];
     }
-    function speed(t) { if (t >= 11 && t < 17) return .35; if (t >= 23 && t < 27.5) return .45; if (t >= 17 && t < 23) return .6; return 1; }
+    function speed(t) { if (t >= 15.5 && t < 28.5) return .6; if (t >= 40 && t < 49) return .6; return 1; }
     function minutesAt(t) { for (let i = 1; i < MIN.length; i++) if (t <= MIN[i][0]) { const [a, ma] = MIN[i - 1], [b, mb] = MIN[i]; return ma + (mb - ma) * (t - a) / (b - a); } return MIN[MIN.length - 1][1]; }
-    const opa = (t, a, b, f = .4) => clamp01(Math.min((t - a) / f, (b - t) / f));
     window.__film = { fps:FPS, duration:DUR, frames:FPS * DUR,
       frame(i, draw = true) {
         const t = i / FPS, dt = Math.max(0, t - tPrev); tPrev = t;
         const steps = Math.max(1, Math.ceil(dt * speed(t) / .05));
         for (let k = 0; k < steps; k++) advance(dt * speed(t) / steps, 0);
         state.minutes = minutesAt(t);
-        if (t >= 17 && !docked) { docked = true; const f0 = ferries[0].userData; f0.u = DOCK_U - .012; f0.wait = 0; ferries.slice(1).forEach(f => { if (Math.abs(f.userData.u - DOCK_U) < .08) f.userData.u = (f.userData.u + .3) % 1; }); }
+        if (t >= 40 && !docked) { docked = true; const f0 = ferries[0].userData; f0.u = DOCK_U - .01; f0.wait = 0; ferries.slice(1).forEach(f => { if (Math.abs(f.userData.u - DOCK_U) < .08) f.userData.u = (f.userData.u + .3) % 1; }); }
+        if (t >= 45 && !sprayed) { sprayed = true; fountain.t = 0; }
         while (fired < FIRE.length && t >= FIRE[fired]) { launchFirework(["peony", "ring", "willow", "double"][fired % 4]); fired++; }
         const [pos, tgt] = shot(t); camera.position.copy(pos); camera.lookAt(tgt); controls.target.copy(tgt);
-        const c = CAPS.find(c => t >= c[0] && t <= c[1]);
-        if (c) { capS.textContent = c[2]; capS.hidden = !c[2]; capB.textContent = c[3]; cap.style.opacity = opa(t, c[0], c[1]); } else cap.style.opacity = 0;
-        titleEl.style.opacity = opa(t, .3, 4.7, .6); endEl.style.opacity = clamp01((t - 44) / .8);
-        let f = 0; for (const x of CUTS) f = Math.max(f, 1 - Math.abs(t - x) / .22); fadeEl.style.opacity = clamp01(f);
+        let f = clamp01(1 - t / .8) + clamp01((t - 63) / 1); for (const x of CUTS) f = Math.max(f, 1 - Math.abs(t - x) / .22); fadeEl.style.opacity = clamp01(f);
         if (draw) drawFrame(); return t;
       } };
   }
