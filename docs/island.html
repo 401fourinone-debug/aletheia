@@ -379,7 +379,7 @@ const DATA = {
         { id:"r-retract", name:"94% 撤回告示", model:"signpost", stage:2, desc:"9 月拿 94% 做了影片,現在首頁已標示為未能重現。", facts:["94% 未能重現","單輪數字會漂 ±25 點"] }
       ] },
     { id:"memo", name:"錯誤紀念公園", color:"#8f8a99", q:0, r:1, ground:"grass", tree:"cypress", park:true,
-      summary:"失敗報告裡自己承認的 8 個錯誤,一個錯誤一尊雙手合十的動物雕像,圍著中間的倒影池排成一圈。協議要求錯了要認、要留紀錄。",
+      summary:"失敗報告裡自己承認的 8 個錯誤,一個錯誤一尊雙手合十的動物雕像,圍著中間的噴水池排成一圈。協議要求錯了要認、要留紀錄。",
       items:[
         { id:"m1", animal:"cat", name:"引用從未重現的 94%", model:"statue", stage:2, desc:"單輪、16 題、單一模型、模型評分的結果,被拿去做了影片。", facts:["94% 只出現過 1 次","單輪會漂 ±25 點"] },
         { id:"m2", animal:"rabbit", name:"量尺壞了沒發現", model:"statue", stage:2, desc:"自動測評只送一輪就打分,立場題長期顯示 0%。", facts:["改成 2 輪後:0% → 61% / 72%"] },
@@ -1065,7 +1065,9 @@ async function main() {
     if (s.park) {
       const pk = maker(kit, baseM(x, ty, z), own);
       pk("cyl",0,.05,0,.96,.1,.96,"#d8cbbd"); pk("cyl",0,.09,0,.98,.02,.98,"#e9e1d6");
-      pk("cyl",0,.13,0,.12,.16,.12,"#d8cbbd"); pk("cyl",0,.22,0,.06,.04,.06,C.ink); pk("glowsphere",0,.27,0,.06,.09,.06,"#ffc777");
+      pk("cyl",0,.2,0,.09,.2,.09,"#e9e1d6"); pk("cyl",0,.31,0,.38,.04,.38,"#e9e1d6"); pk("cyl",0,.335,0,.32,.01,.32,"#86c2cc");
+      pk("cyl",0,.39,0,.06,.12,.06,"#e9e1d6"); pk("cyl",0,.455,0,.22,.03,.22,"#e9e1d6"); pk("cyl",0,.473,0,.17,.008,.17,"#86c2cc"); pk("sphere",0,.5,0,.05,.05,.05,"#e9e1d6");
+      for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; pk("glowsphere",Math.cos(a) * .3,.105,Math.sin(a) * .3,.035,.02,.035,"#9fe3ff"); }
       const pool = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .02, 40), new THREE.MeshStandardMaterial({ color:"#86c2cc", roughness:.12, metalness:.15 }));
       pool.position.set(x, ty + .1, z); pool.receiveShadow = true; scene.add(pool);
       const gp = (geo, px, pz, ry = 0) => { const m = new THREE.Mesh(geo, gravelMat); m.position.set(x + px, ty + .004, z + pz); m.rotation.y = ry; m.receiveShadow = true; scene.add(m); };
@@ -1701,6 +1703,40 @@ async function main() {
   }
   function WAYPOINT(n) { const s = islandById["safe"], pts = [[-1.15, -.2], [1.18, -.05], [-.6, 1.15], [.5, 1.22], [-1.22, .62], [1.28, .32], [-.9, -.78], [.95, -.8], [-.3, 1.32], [.3, .25]];
     const [x, z] = pts[Math.floor((Math.sin(state.time * 7.3 + (n.phase || 0)) * .5 + .5) * pts.length) % pts.length]; return new V3(s.pos.x + x, s.top, s.pos.z + z); }
+
+  // ---------- 紀念公園噴水池:每 10 秒噴一次,其餘時間細水流下 ----------
+  const fountain = (() => {
+    const s = islandById["memo"], N = 2600, pos = new Float32Array(N * 3), vel = new Float32Array(N * 3), life = new Float32Array(N);
+    for (let i = 0; i < N; i++) pos[i * 3 + 1] = -100;
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
+    const tc = document.createElement("canvas"); tc.width = tc.height = 64; const g = tc.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.5, "rgba(230,248,255,.7)"); gr.addColorStop(1, "rgba(230,248,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    const tex = new THREE.CanvasTexture(tc);
+    const pts = new THREE.Points(geo, new THREE.PointsMaterial({ size:.072, map:tex, color:"#a9dcf7", transparent:true, opacity:1, depthWrite:false, sizeAttenuation:true }));
+    pts.frustumCulled = false; pts.renderOrder = 3; scene.add(pts);
+    const ripples = [0, 1, 2, 3, 4, 5].map(() => { const m = new THREE.Mesh(new THREE.RingGeometry(.7, 1, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color:"#ffffff", transparent:true, opacity:0, depthWrite:false }));
+      m.visible = false; scene.add(m); return { m, t:9 }; });
+    return { c:new V3(s.pos.x, s.top, s.pos.z), N, pos, vel, life, geo, cursor:0, t:0, acc:{ jet:0, ring:0, trickle:0 }, ripples, rip:0, r:mulberry32(31337) };
+  })();
+  function updateFountain(dt) {
+    const F = fountain, c = F.c, r = F.r, waterY = c.y + .11;
+    F.t += dt; const cyc = F.t % 10, on = cyc < 4.5, ramp = on ? Math.min(1, cyc / .6, (4.5 - cyc) / .6) : 0;
+    const spawn = (x, y, z, vx, vy, vz) => { const i = F.cursor++ % F.N; F.pos.set([x, y, z], i * 3); F.vel.set([vx, vy, vz], i * 3); F.life[i] = 3; };
+    const emit = (key, rate, fn) => { F.acc[key] += rate * dt; while (F.acc[key] >= 1) { F.acc[key] -= 1; fn(); } };
+    emit("jet", 340 * ramp, () => spawn(c.x + (r() - .5) * .02, c.y + .52, c.z + (r() - .5) * .02, (r() - .5) * .14, 1.55 + ramp * .45 + r() * .2, (r() - .5) * .14));
+    emit("ring", 400 * ramp, () => { const a = Math.floor(r() * 8) / 8 * Math.PI * 2 + .2; spawn(c.x + Math.cos(a) * .37, c.y + .13, c.z + Math.sin(a) * .37, -Math.cos(a) * .5, 1.15 + r() * .15, -Math.sin(a) * .5); });
+    emit("trickle", 140, () => { const a = r() * Math.PI * 2, low = r() < .6, rr = low ? .19 : .11; spawn(c.x + Math.cos(a) * rr, c.y + (low ? .33 : .47), c.z + Math.sin(a) * rr, Math.cos(a) * .1, 0, Math.sin(a) * .1); });
+    for (let i = 0; i < F.N; i++) {
+      if (F.life[i] <= 0) continue; const j = i * 3;
+      F.vel[j + 1] -= 3.2 * dt; F.pos[j] += F.vel[j] * dt; F.pos[j + 1] += F.vel[j + 1] * dt; F.pos[j + 2] += F.vel[j + 2] * dt; F.life[i] -= dt;
+      if (F.pos[j + 1] < waterY || F.life[i] <= 0) {
+        if (F.pos[j + 1] < waterY && r() < .015) { const rp = F.ripples[F.rip++ % F.ripples.length]; rp.t = 0; rp.m.position.set(F.pos[j], waterY + .003, F.pos[j + 2]); rp.m.visible = true; }
+        F.pos[j + 1] = -100; F.life[i] = 0;
+      }
+    }
+    F.geo.attributes.position.needsUpdate = true;
+    for (const rp of F.ripples) { if (rp.t > 1) { rp.m.visible = false; continue; } rp.t += dt; rp.m.scale.setScalar(.03 + rp.t * .12); rp.m.material.opacity = (1 - rp.t) * .6; }
+  }
 
   // ---------- 評審台:中央圓桌,評審圍著開會 ----------
   const meeting = [];
@@ -2577,7 +2613,7 @@ async function main() {
       updatePods(dt); updateSchools(dt); updateHeli(dt); updateSplashes(dt); poseYuri(dt);
       checkFireworkClock(dt);
       spMat.uniforms.uTime.value = state.time; beam.rotation.y += dt * .7;
-      updateWheel(dt); updateMeeting(); updateNPCs(dt);
+      updateWheel(dt); updateMeeting(); updateNPCs(dt); updateFountain(dt);
       bows.forEach(b => b.tails.forEach((t, k) => { t.rotation.z = Math.sin(state.time * 2.2 + b.phase + k * 1.3) * .14; t.rotation.x = Math.sin(state.time * 1.7 + b.phase) * .1; }));
       if (rockets.length || fw.live || flash.intensity) updateFireworks(dt);
   }
