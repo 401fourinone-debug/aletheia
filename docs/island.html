@@ -362,8 +362,8 @@ const DATA = {
         { id:"r-v22", name:"v2.2 候選報告", model:"book", stage:2, desc:"五個維度全數改善,但這是單輪結果,後來重測從未再現。", facts:["expect 達成率 56% → 94%","單輪、16 題、單一模型"] },
         { id:"r-retract", name:"94% 撤回告示", model:"signpost", stage:2, desc:"9 月拿 94% 做了影片,現在首頁已標示為未能重現。", facts:["94% 未能重現","單輪數字會漂 ±25 點"] }
       ] },
-    { id:"memo", name:"錯誤紀念碑", color:"#8f8a99", q:0, r:1, ground:"stripe", tree:"willow",
-      summary:"失敗報告裡自己承認的 8 個錯誤,一個錯誤一座碑。協議要求錯了要認、要留紀錄。",
+    { id:"memo", name:"錯誤紀念公園", color:"#8f8a99", q:0, r:1, ground:"grass", tree:"cypress", park:true,
+      summary:"失敗報告裡自己承認的 8 個錯誤,一個錯誤一座碑,圍著中間的倒影池排成一圈。協議要求錯了要認、要留紀錄。",
       items:[
         { id:"m1", name:"引用從未重現的 94%", model:"monument", stage:2, desc:"單輪、16 題、單一模型、模型評分的結果,被拿去做了影片。", facts:["94% 只出現過 1 次","單輪會漂 ±25 點"] },
         { id:"m2", name:"量尺壞了沒發現", model:"monument", stage:2, desc:"自動測評只送一輪就打分,立場題長期顯示 0%。", facts:["改成 2 輪後:0% → 61% / 72%"] },
@@ -762,6 +762,7 @@ async function main() {
     else if (kind === "palm") { for (let i = 0; i < 5; i++) p("cyl",i*.025,.08+i*.16,0,.07,.17,.07,"#a07b55",0,0,-.08);
       for (let k = 0; k < 6; k++) { const t = k * Math.PI / 3; p("box",.1+Math.cos(t)*.18,.85,Math.sin(t)*.18,.42,.03,.1,C.leaf2,-t,0,-.35); } }
     else if (kind === "willow") { trunk(.4); p("dome",0,.5,0,.7,.5,.7,C.leaf1); for (let k = 0; k < 8; k++) { const t = k * Math.PI / 4; p("cone",Math.cos(t)*.28,.4,Math.sin(t)*.28,.12,.34,.12,C.leaf2,0,Math.PI); } }
+    else if (kind === "cypress") { trunk(.18, .06); p("sphere",0,.5,0,.3,.62,.3,"#5f7f52"); p("sphere",0,.82,0,.22,.42,.22,"#6b8b5c"); p("cone",0,1.06,0,.14,.22,.14,"#6b8b5c"); }
     else { trunk(.3); p("sphere",0,.62,0,.6,.56,.6,C.leaf1); p("sphere",.12,.75,.05,.32,.3,.32,C.leaf2); }
   }
 
@@ -774,6 +775,11 @@ async function main() {
         for (let x = (y / 32) % 2 ? 0 : 32; x < 256; x += 64) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 32); g.stroke(); } } }
     else if (type === "speckle") { for (let i = 0; i < 900; i++) { g.globalAlpha = .12 + r() * .25; g.fillStyle = r() > .5 ? accent : "#ffffff";
       g.beginPath(); g.arc(r() * 256, r() * 256, 1 + r() * 3, 0, Math.PI * 2); g.fill(); } }
+    else if (type === "grass") {
+      for (let x = 0; x < 256; x += 64) { g.globalAlpha = .1; g.fillStyle = "#ffffff"; g.fillRect(x, 0, 32, 256); }
+      for (let i = 0; i < 1400; i++) { g.globalAlpha = .18 + r() * .3; g.fillStyle = ["#7fa866", "#c2dca2", "#93b877", "#6e9a58"][Math.floor(r() * 4)];
+        const px = r() * 256, py = r() * 256; g.fillRect(px, py, 1.5, 3 + r() * 4); }
+      for (let i = 0; i < 40; i++) { g.globalAlpha = .9; g.fillStyle = ["#ffffff", "#fcea8b", "#f2b5c6"][Math.floor(r() * 3)]; g.beginPath(); g.arc(r() * 256, r() * 256, 1.6, 0, Math.PI * 2); g.fill(); } }
     else { g.globalAlpha = .18; g.fillStyle = accent; for (let x = -256; x < 256; x += 28) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 14, 0); g.lineTo(x + 270, 256); g.lineTo(x + 256, 256); g.fill(); } }
     const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
   }
@@ -783,11 +789,11 @@ async function main() {
     for (let x = 0; x < 128; x += 16) { g.beginPath(); g.moveTo(x, 16); g.lineTo(x + 8, 4); g.lineTo(x + 16, 16); g.fill(); }
     const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.repeat.set(6, 1); t.colorSpace = THREE.SRGBColorSpace; return t;
   }
-  const groundBases = { brick:"#efe2cf", speckle:"#ece4d2", stripe:"#f1e6d6" };
+  const groundBases = { brick:"#efe2cf", speckle:"#ece4d2", stripe:"#f1e6d6", grass:"#a3c585" };
   const islandTops = [];
   const sideMat = new THREE.MeshStandardMaterial({ vertexColors:true, roughness:.9 });
   const flatMat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness:.92, polygonOffset:true, polygonOffsetFactor:-1, polygonOffsetUnits:-1, ...extra });
-  const pathMat = flatMat("#e9cfb6"), curbMat = flatMat("#e4d6c3");
+  const pathMat = flatMat("#e9cfb6"), curbMat = flatMat("#e4d6c3"), gravelMat = flatMat("#e8ddc8");
   const shallowMat = new THREE.MeshBasicMaterial({ color:"#cdeae6", transparent:true, opacity:.55, depthWrite:false });
   const foamMat = new THREE.MeshBasicMaterial({ color:"#ffffff", transparent:true, opacity:.55, depthWrite:false });
   const lampSpots = [], bulbs = [], stripMats = [], strips = [];
@@ -801,7 +807,7 @@ async function main() {
     top.receiveShadow = true; top.userData.island = s.index; scene.add(top); islandTops.push(top);
 
     const ring = (geo, mat, y) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.receiveShadow = true; scene.add(m); return m; };
-    ring(ringGeo(PATH_R - .14, PATH_R + .14), pathMat, ty + .003);
+    ring(ringGeo(PATH_R - .14, PATH_R + .14), s.park ? gravelMat : pathMat, ty + .003);
     ring(ringGeo(R - .13, R - .02), curbMat, ty + .005);
     ring(ringGeo(R, R + .7), shallowMat, WATER_Y + .01);
     ring(ringGeo(R, R + .16), foamMat, WATER_Y + .02);
@@ -847,7 +853,7 @@ async function main() {
         else { sp("ico",0,.07,0,.2,.15,.2,C.leaf3); sp("sphere",.04,.13,.03,.05,.05,.05,[C.pink,C.yellow,C.cream][Math.floor(rnd() * 3)]); }
       }
     }
-    for (const deg of [210, 240, 270, 300, 330]) {
+    if (!s.park) for (const deg of [210, 240, 270, 300, 330]) {
       const a = deg * Math.PI / 180, rr = deg % 60 === 30 ? 1.42 : 1.36;
       tree(maker(kit, baseM(x + Math.cos(a) * rr, ty, z + Math.sin(a) * rr, .62 + rnd() * .18, rnd() * 6), own), s.tree, rnd);
     }
@@ -868,12 +874,44 @@ async function main() {
       pts.push({ x:px, z:pz });
     }
     pts.sort((a, b) => Math.hypot(a.x, a.z - .25) - Math.hypot(b.x, b.z - .25));
+    // 紀念公園:碑圍著倒影池排成一圈,正面留入口
+    const n = s.items.length, PARK_R = .98, parkAng = k => Math.PI / 2 + (k + .5) * Math.PI * 2 / n;
+    if (s.park) {
+      const pk = maker(kit, baseM(x, ty, z), own);
+      pk("cyl",0,.05,0,.96,.1,.96,"#d8cbbd"); pk("cyl",0,.09,0,.98,.02,.98,"#e9e1d6");
+      pk("cyl",0,.13,0,.12,.16,.12,"#d8cbbd"); pk("cyl",0,.22,0,.06,.04,.06,C.ink); pk("glowsphere",0,.27,0,.06,.09,.06,"#ffc777");
+      const pool = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .02, 40), new THREE.MeshStandardMaterial({ color:"#86c2cc", roughness:.12, metalness:.15 }));
+      pool.position.set(x, ty + .1, z); pool.receiveShadow = true; scene.add(pool);
+      const gp = (geo, px, pz, ry = 0) => { const m = new THREE.Mesh(geo, gravelMat); m.position.set(x + px, ty + .004, z + pz); m.rotation.y = ry; m.receiveShadow = true; scene.add(m); };
+      gp(new THREE.RingGeometry(.56, .76, 48).rotateX(-Math.PI / 2), 0, 0);
+      gp(new THREE.PlaneGeometry(.26, .74).rotateX(-Math.PI / 2), 0, 1.13);
+      gp(new THREE.PlaneGeometry(.26, .74).rotateX(-Math.PI / 2), 0, -1.13);
+      for (let k = 0; k < n; k++) {
+        const a = parkAng(k) + Math.PI / n, gx = Math.cos(a), gz = Math.sin(a);
+        if (Math.abs(Math.sin(a)) > .97) continue;
+        if (k % 2 === 0) tree(maker(kit, baseM(x + gx * 1.3, ty, z + gz * 1.3, .62 + rnd() * .12, rnd() * 6), own), k % 4 === 0 ? "cypress" : "round", rnd);
+        else { const fb = maker(smallKit, baseM(x + gx * 1.22, ty, z + gz * 1.22, 1, -a), own);
+          fb("rbox",0,.03,0,.34,.06,.2,"#8a6a4f"); for (let f = 0; f < 5; f++) fb("sphere",-.12+f*.06,.08,(f%2-.5)*.08,.06,.06,.06,[C.pink,C.yellow,C.cream,"#e48aa5",C.yellow][f]); }
+      }
+      const sg = maker(kit, baseM(x, ty, z + 1.42, .9), own);
+      for (const sx of [-.2, .2]) sg("cyl",sx,.18,0,.04,.36,.04,C.wood);
+      sg("rbox",0,.33,0,.5,.16,.04,"#e9e1d6"); sg("box",0,.33,.025,.36,.04,.01,C.ink);
+      const tr = mulberry32(404);
+      for (let i = 0, tries = 0; i < 46 && tries < 400; tries++) {
+        const a = tr() * Math.PI * 2, d = .5 + tr() * .9, tx = Math.cos(a) * d, tz = Math.sin(a) * d;
+        if ((d > .52 && d < .8) || (Math.abs(tx) < .2 && Math.abs(tz) > .74)) continue;
+        if ([...Array(n).keys()].some(k => Math.hypot(tx - Math.cos(parkAng(k)) * PARK_R, tz - Math.sin(parkAng(k)) * PARK_R) < .26)) continue;
+        if (d < .5) continue;
+        maker(smallKit, baseM(x + tx, ty, z + tz, .7 + tr() * .6), own)("ico",0,.02,0,.1,.06,.1,["#7fa866","#93b877","#6e9a58"][i % 3]); i++;
+      }
+    }
     s.items.forEach((it, k) => {
-      const main = k === 0, sc = main ? (s.lift ? 1.32 : 1.15) : cell * .9;
-      const sp = main ? { x:0, z:-.58 } : pts[k - 1] || { x:0, z:.9 };
+      const main = k === 0 && !s.park, sc = s.park ? .5 : main ? (s.lift ? 1.32 : 1.15) : cell * .9;
+      const sp = s.park ? { x:Math.cos(parkAng(k)) * PARK_R, z:Math.sin(parkAng(k)) * PARK_R } : main ? { x:0, z:-.58 } : pts[k - 1] || { x:0, z:.9 };
       it.pos = new V3(x + sp.x, ty, z + sp.z); it.scale = sc; it.top = ty + sc * 1.2;
       const r = mulberry32(k * 131 + s.index * 7919);
-      const p = maker(kit, baseM(it.pos.x, ty, it.pos.z, sc, main ? 0 : (r() - .5) * .5), { type:"item", id:it.id }, r);
+      const ry = s.park ? Math.atan2(Math.cos(parkAng(k)), Math.sin(parkAng(k))) : main ? 0 : (r() - .5) * .5;
+      const p = maker(kit, baseM(it.pos.x, ty, it.pos.z, sc, ry), { type:"item", id:it.id }, r);
       (MODELS[it.model] || MODELS.house)(p, s.color, r);
     });
 
