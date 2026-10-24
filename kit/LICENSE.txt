@@ -1,0 +1,5 @@
+Aletheia 真實引擎協議與測試資料
+授權:CC BY 4.0(https://creativecommons.org/licenses/by/4.0/deed.zh-hant)
+
+可自由使用、修改、散布,包括商業用途。請標示:
+「Aletheia 真實引擎協議 v2.4 · https://github.com/401fourinone-debug/aletheia」

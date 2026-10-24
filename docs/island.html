@@ -112,6 +112,8 @@ dl.kv dt { color:var(--muted); } dl.kv dd { margin:0; font-weight:700; }
 .side-head { padding:8px 6px 14px; }
 .side-eyebrow { font:700 11px/1.4 var(--mono); letter-spacing:3px; color:var(--coral); }
 .side-head h2 { margin:8px 0 6px; font:900 28px/1.25 var(--sans); letter-spacing:.02em; }
+.side-join { display:inline-block; margin-top:10px; padding:7px 14px; border-radius:999px; background:var(--coral); color:#fff; font-weight:700; font-size:13px; text-decoration:none; }
+.side-join:hover { filter:brightness(1.08); }
 .side-head p { margin:0; color:var(--muted); font-size:13px; line-height:1.6; white-space:pre-line; font-variant-numeric:tabular-nums; }
 #sideList summary { display:grid; grid-template-columns:48px 1fr auto; align-items:center; gap:8px; min-height:58px; cursor:pointer; list-style:none; padding:0 6px; border-radius:8px; }
 #sideList summary .num { font:italic 400 28px/1 var(--num); color:var(--coral); font-variant-numeric:tabular-nums; }
@@ -258,6 +260,7 @@ body.film .panel, body.film #tools, body.film #hudToggle, body.film #intro, body
     <div class="side-eyebrow">THE ALETHEIA INDEX</div>
     <h2>把誠實,測出來。</h2>
     <p id="sideStats"></p>
+    <a class="side-join" href="join.html">加入測試 →</a>
   </div>
   <input id="search" type="search" placeholder="搜尋島嶼、原則、題目…" autocomplete="off">
   <div class="tabs" role="tablist">
