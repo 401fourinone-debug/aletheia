@@ -70,8 +70,10 @@ button { font:inherit; color:inherit; }
 .tile { background:var(--soft); border-radius:12px; padding:8px 10px; min-width:0; }
 .tile b { display:block; font:italic 700 24px/1.1 var(--num); color:var(--coral); }
 .tile small { display:block; color:var(--muted); font-size:11px; line-height:1.4; }
-.facts { margin:0; padding:0 0 0 18px; }
-.facts li { margin:3px 0; }
+.facts { margin:0; padding:0; list-style:none; display:grid; gap:6px; }
+.facts li { position:relative; padding:10px 12px 10px 30px; background:var(--soft); border-radius:10px; line-height:1.55; }
+.facts li::before { content:""; position:absolute; left:13px; top:1.05em; width:7px; height:7px; border-radius:50%; background:var(--coral); }
+#cardBody > .eyebrow:first-child { color:var(--coral); }
 .list { list-style:none; margin:0; padding:0; }
 .list button { display:grid; grid-template-columns:24px 1fr auto; gap:8px; align-items:center; width:100%; min-height:44px; padding:6px 6px; border:0;
   border-bottom:1px solid var(--line); background:none; text-align:left; cursor:pointer; border-radius:8px; }
@@ -107,11 +109,17 @@ dl.kv dt { color:var(--muted); } dl.kv dd { margin:0; font-weight:700; }
 .tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:10px 0 8px; }
 #sideList { overflow-y:auto; flex:1; padding-right:2px; overscroll-behavior:contain; }
 #sideList details { border-bottom:1px solid var(--line); }
-#sideList summary { display:grid; grid-template-columns:30px 1fr auto; align-items:center; gap:8px; min-height:46px; cursor:pointer; list-style:none; padding:0 4px; border-radius:8px; }
+.side-head { padding:8px 6px 14px; }
+.side-eyebrow { font:700 11px/1.4 var(--mono); letter-spacing:3px; color:var(--coral); }
+.side-head h2 { margin:8px 0 6px; font:900 28px/1.25 var(--sans); letter-spacing:.02em; }
+.side-head p { margin:0; color:var(--muted); font-size:13px; line-height:1.6; white-space:pre-line; font-variant-numeric:tabular-nums; }
+#sideList summary { display:grid; grid-template-columns:48px 1fr auto; align-items:center; gap:8px; min-height:58px; cursor:pointer; list-style:none; padding:0 6px; border-radius:8px; }
+#sideList summary .num { font:italic 400 28px/1 var(--num); color:var(--coral); font-variant-numeric:tabular-nums; }
+#sideList summary b { font-size:16px; font-weight:800; }
+#sideList summary small::after { content:" ↗"; }
 #sideList summary::-webkit-details-marker { display:none; }
 #sideList summary:hover { background:var(--soft); }
-#sideList summary .ib { width:26px; height:26px; margin:0; font-size:11px; }
-#sideList summary b { font-weight:700; }
+
 #sideList summary small { color:var(--muted); font-variant-numeric:tabular-nums; }
 #sideList details .list { padding:0 0 6px 18px; }
 #sideList details .list button { min-height:38px; border-bottom:0; }
@@ -246,10 +254,15 @@ body.film .panel, body.film #tools, body.film #hudToggle, body.film #intro, body
 
 <aside id="side" class="panel" aria-label="島嶼清單">
   <button class="sheet-handle" type="button" aria-label="調整清單高度"></button>
+  <div class="side-head">
+    <div class="side-eyebrow">THE ALETHEIA INDEX</div>
+    <h2>把誠實,測出來。</h2>
+    <p id="sideStats"></p>
+  </div>
   <input id="search" type="search" placeholder="搜尋島嶼、原則、題目…" autocomplete="off">
   <div class="tabs" role="tablist">
     <button class="btn" id="tabTopics" type="button" role="tab" aria-pressed="true">島嶼主題</button>
-    <button class="btn" id="tabFlows" type="button" role="tab" aria-pressed="false">協作關係</button>
+    <button class="btn" id="tabFlows" type="button" role="tab" aria-pressed="false">協作關係 <span id="flowCount"></span></button>
   </div>
   <div id="sideList"></div>
 </aside>
@@ -458,6 +471,14 @@ const DATA = {
     { date:"09-20", text:"協議 v2.2:修掉格式膨脹與假精確,新增 P10" },
     { date:"09-20", text:"協議 v2.1:全文、測試題與評分標準" }
   ],
+  models: [
+    { name:"Claude", color:"#c96f4f", at:["lab-models", "t-claude"], status:"v2.1、v2.2 的受測模型",
+      detail:"v2.1、v2.2 兩輪測評由 Claude Haiku 4.5 作答。失敗報告這一輪 API 額度用完,一次都沒在 Claude 上跑,列在待辦工地。", state:"部分完成" },
+    { name:"GPT", color:"#2f7d6b", at:["lab-models", "j-blind"], status:"失敗報告這一輪的受測與評審",
+      detail:"失敗報告的自動測評用 gpt-4o-mini(12 題 × 4 輪)與 gpt-5.1(6 題 × 2 輪)。評審也是 gpt-4o-mini,和受測模型同一家。", state:"已測" },
+    { name:"Gemini", color:"#4a6fd8", at:["t-judge"], status:"原定的交叉評審",
+      detail:"原本設計由兩家不同公司的模型交叉評分。Gemini 免費額度限流,這一步還沒完成。", state:"未完成" }
+  ],
   roles: {
     "研究員": { body:"#f7f4ee", hair:"#3a2a22", hat:null },
     "評審":   { body:"#3b4660", hair:"#1d1a18", hat:null },
@@ -529,6 +550,8 @@ async function main() {
   const flows = DATA.flows.map((f, i) => ({ ...f, index:i, A:place(f.from), B:place(f.to) }));
   const center = islands.reduce((a, s) => a.add(s.pos), new V3()).multiplyScalar(1 / islands.length);
   center.y = 0.4;
+  setTimeout(() => { const el = document.getElementById("sideStats"); if (el) el.textContent = `${islands.length} 座島 / ${items.length} 個細項\n選一座島,走進它的測評流程。`;
+    const fc = document.getElementById("flowCount"); if (fc) fc.textContent = flows.length; });
   $("#stats").textContent = `${islands.length} 座島 · ${items.length} 棟建物 · ${flows.length} 條協作線 · 1 座訪客碼頭`;
 
   // ---------- 渲染器、相機 ----------
@@ -1696,6 +1719,34 @@ async function main() {
         v.kind = "viewer"; v.pos = new V3(x - Math.cos(a) * .2, s.top, z - Math.sin(a) * .2); v.face = Math.atan2(Math.cos(a), Math.sin(a)); npcs.push(v); }
     });
   }
+  // 模型小標示:Claude、GPT、Gemini 漂在相關的建物上方,點了說明關聯
+  const modelSprites = [];
+  {
+    const tex = m => { const c = document.createElement("canvas"); c.width = 256; c.height = 80; const g = c.getContext("2d");
+      g.fillStyle = "#ffffff"; g.beginPath(); g.roundRect(4, 6, 248, 68, 34); g.fill(); g.strokeStyle = m.color; g.lineWidth = 5; g.stroke();
+      g.fillStyle = m.state === "已測" ? "#3fae6a" : m.state === "未完成" ? "#c9c2b8" : "#e8a83a"; g.beginPath(); g.arc(40, 40, 11, 0, Math.PI * 2); g.fill();
+      g.fillStyle = m.color; g.font = `800 36px "Noto Sans TC","PingFang TC",sans-serif`; g.textAlign = "left"; g.textBaseline = "middle"; g.fillText(m.name, 62, 42);
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+    const byItem = {};
+    DATA.models.forEach((m, mi) => { const t = tex(m); m.at.forEach(id => { (byItem[id] ||= []).push([m, mi, t]); }); });
+    for (const [id, list] of Object.entries(byItem)) {
+      const it = itemById[id]; if (!it) continue;
+      list.forEach(([m, mi, t], k) => {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:t, depthWrite:false })); sp.scale.set(.5, .156, 1);
+        sp.position.set(it.pos.x + (k - (list.length - 1) / 2) * .54, it.top + .2, it.pos.z); sp.userData.model = mi; sp.renderOrder = 8;
+        scene.add(sp); modelSprites.push(sp);
+      });
+    }
+  }
+  function selectModel(mi) {
+    state.sel = { type:"model" }; selectedOwners = new Set(DATA.models[mi].at); recolor(); showFlows([]); setLabels(null); clearPins();
+    openCard(`<div class="eyebrow">模型小標示</div><h2>${esc(DATA.models[mi].name)} 和這個專案的關係</h2>
+      <p>協議寫給所有對話式 AI 用,測評實際用到的模型如下。小標示的圓點:綠色是已測、黃色是部分完成、灰色是還沒做。</p>
+      <ul class="facts">${DATA.models.map((m, k) => `<li${k === mi ? ' style="background:var(--yellow)"' : ""}><b>${esc(m.name)} · ${esc(m.state)}</b><br>${esc(m.detail)}</li>`).join("")}</ul>
+      <h3>標示在哪裡</h3><div class="chips">${DATA.models[mi].at.map(id => itemById[id]).filter(Boolean).map(it => `<button class="chip" type="button" data-item="${it.id}" style="--c:${it.island.color}"><i></i>${esc(it.island.name)} · ${esc(it.name)}</button>`).join("")}</div>`);
+    const it = itemById[DATA.models[mi].at[0]]; focus(new V3(it.pos.x, it.top, it.pos.z), [1.8, 2.2, 3.4]);
+  }
+
   // 題庫中央:出題人員圍著書桌寫題目,偶爾有人想到好題目舉手
   const writers = [];
   {
@@ -2525,7 +2576,7 @@ async function main() {
     const r = renderer.domElement.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
     ray.setFromCamera(ndc, camera);
     walkerMeshes.body.boundingSphere = null; walkerMeshes.head.boundingSphere = null;
-    const targets = [walkerMeshes.body, walkerMeshes.head, ...flows.filter(f => f.tube.visible).map(f => f.tube), ...signMeshes, ...yuriMeshes, ...kitMeshes, ...islandTops, ...ferries];
+    const targets = [walkerMeshes.body, walkerMeshes.head, ...flows.filter(f => f.tube.visible).map(f => f.tube), ...modelSprites, ...signMeshes, ...yuriMeshes, ...kitMeshes, ...islandTops, ...ferries];
     const hitBow = ray.intersectObjects(bowMeshes, false)[0];
     if (hitBow) { const near = ray.intersectObjects(targets, false)[0]; if (!near || near.distance > hitBow.distance - .05) return selectBow(hitBow.object.userData.bow); }
     const hit0 = ray.intersectObjects(ferries, true)[0];
@@ -2539,6 +2590,7 @@ async function main() {
       if (own?.type === "item") return selectItem(own.id); if (own?.type === "island") return selectIsland(own.i); if (own?.type === "harbor") return selectHarbor();
       if (own?.type === "beacon") return selectBeacon(); return; }
     if (o.userData.harbor) return selectHarbor();
+    if (o.userData.model != null) return selectModel(o.userData.model);
     if (o.userData.yuri) return selectYuri();
     if (o.userData.sign) { const t = o.userData.sign; if (t.harbor) return selectHarbor(); if (t.beacon) return selectBeacon(); return selectIsland(t.island); }
     if (o.userData.island != null) return selectIsland(o.userData.island);
@@ -2552,7 +2604,7 @@ async function main() {
       const html = islands.map(s => {
         const its = s.items.filter(it => hit(it.name) || hit(it.desc) || hit(s.name));
         if (!its.length) return "";
-        return `<details ${q ? "open" : ""}><summary data-key="i${s.index}" data-island="${s.index}"><span class="ib" style="--c:${s.color}">${s.no}</span><b>${esc(s.name)}</b><small>${s.items.length}</small></summary>
+        return `<details ${q ? "open" : ""}><summary data-key="i${s.index}" data-island="${s.index}"><span class="num">${s.no}</span><b>${esc(s.name)}</b><small>${s.items.length}</small></summary>
           <ol class="list">${its.map(it => `<li><button type="button" data-key="${it.id}" data-item="${it.id}"><span class="n" style="background:${s.color}">${it.k + 1}</span>
             <span>${esc(it.name)}</span><span class="st s${it.stage}">${STAGES[it.stage]}</span></button></li>`).join("")}</ol></details>`;
       }).join("");
