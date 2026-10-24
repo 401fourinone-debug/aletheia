@@ -296,7 +296,7 @@ const DATA = {
         { id:"hq-4", name:"對話模式", model:"stall", stage:2, desc:"情緒題、簡單題、使用者在爭辯時,改用自然語言,不硬套四段。", facts:["v2.3 曾讓簡單題硬套格式","v2.4 修好:簡單題 100% / 100%","修法是改結構,不是加規則"] },
         { id:"hq-5", name:"啟用與退出", model:"signpost", stage:2, desc:"支援 Skill 的環境依描述條件式載入;一般環境從貼上起全程啟用,說「關閉 Aletheia」就退出。", facts:["適用 ChatGPT、Claude、Gemini","2 種啟用環境","不能讓模型取得原本沒有的權限"] }
       ] },
-    { id:"honest", name:"誠實原則", color:"#3e7c8c", q:1, r:-1, ground:"speckle", tree:"conifer",
+    { id:"honest", name:"誠實原則", color:"#3e7c8c", q:1, r:-1, ground:"grass", tree:"conifer",
       summary:"保護原則的前半(P1–P6):不知道就說、事實和推論分開、不討好、推論要標信心。",
       items:[
         { id:"p3", name:"P3 拒絕討好", model:"stage", stage:2, evidence:"no", desc:"不迎合預設立場;發現錯誤前提先糾正,而且後文不能換句話又附和。", facts:["被施壓不改口:無協議 33%、有協議 44%","因對方資歷而讓步:兩組都是 33%","gpt-5.1:兩組都是 50%"] },
@@ -315,7 +315,7 @@ const DATA = {
         { id:"p9", name:"P9 時效標示", model:"clock", stage:2, evidence:"na", desc:"價格、法規、現任職位這類動態數據,附「以 YYYY-MM 為準」。", facts:["v2.1 把基本工資年度寫錯 1 年","超出資料時點的數字一律進數據斷點"] },
         { id:"p10", name:"P10 具體數字", model:"coin", stage:2, evidence:"na", desc:"電話、金額、條號、劑量不確定到敢讓人照做,就不給數字,改給查詢管道。", facts:["v2.2 新增","起因:編造了 1 支求助專線號碼","求助專線最嚴格"] }
       ] },
-    { id:"coop", name:"合作原則", color:"#e48aa5", q:-1, r:0, ground:"speckle", tree:"sakura",
+    { id:"coop", name:"合作原則", color:"#e48aa5", q:-1, r:0, ground:"grass", tree:"sakura",
       summary:"C1–C5:誠實之外還要有用。只會說「不知道」的 AI 和只會說好話的 AI 一樣沒用。",
       items:[
         { id:"c5", name:"C5 溫度守則", model:"house", stage:2, evidence:"no", desc:"內容不軟化,語氣可以有人味。冷酷是懶惰的誠實。", facts:["情緒對話:所有條件下兩組都 0%","v1.0 起就有"] },
@@ -345,7 +345,7 @@ const DATA = {
         { id:"lab-mini", name:"極簡版對照", model:"house", stage:2, desc:"只留 4 條規則的 522 字版本,和 11,651 字完整版比。", facts:["522 字版總分 +4.2","夾帶指令:50% 對 100%","差距在哪一段還沒查出來"] },
         { id:"lab-noise", name:"雜訊量測", model:"gauge", stage:2, desc:"完全不給協議重跑,看分數自己會漂多少。", facts:["達標率落在 33.3%–58.3%","標準差 4.8 到 11.8","單輪數字會漂 ±25 點"] }
       ] },
-    { id:"judge", name:"評審台", color:"#8a6fb5", q:2, r:0, ground:"speckle", tree:"conifer",
+    { id:"judge", name:"評審台", color:"#8a6fb5", q:2, r:0, ground:"grass", tree:"conifer",
       summary:"評審只看回答本身和該題的 expect,不看有沒有用協議格式。協議的價值在結果更好,不是格式更多。",
       items:[
         { id:"j-blind", name:"盲評席", model:"court", stage:2, desc:"五個維度各 1–5 分,另外判斷 expect 是否整體達成。", facts:["5 個維度","每項 1–5 分","另外輸出 expect_met"] },
@@ -363,16 +363,16 @@ const DATA = {
         { id:"r-retract", name:"94% 撤回告示", model:"signpost", stage:2, desc:"9 月拿 94% 做了影片,現在首頁已標示為未能重現。", facts:["94% 未能重現","單輪數字會漂 ±25 點"] }
       ] },
     { id:"memo", name:"錯誤紀念公園", color:"#8f8a99", q:0, r:1, ground:"grass", tree:"cypress", park:true,
-      summary:"失敗報告裡自己承認的 8 個錯誤,一個錯誤一座碑,圍著中間的倒影池排成一圈。協議要求錯了要認、要留紀錄。",
+      summary:"失敗報告裡自己承認的 8 個錯誤,一個錯誤一尊雙手合十的動物雕像,圍著中間的倒影池排成一圈。協議要求錯了要認、要留紀錄。",
       items:[
-        { id:"m1", name:"引用從未重現的 94%", model:"monument", stage:2, desc:"單輪、16 題、單一模型、模型評分的結果,被拿去做了影片。", facts:["94% 只出現過 1 次","單輪會漂 ±25 點"] },
-        { id:"m2", name:"量尺壞了沒發現", model:"monument", stage:2, desc:"自動測評只送一輪就打分,立場題長期顯示 0%。", facts:["改成 2 輪後:0% → 61% / 72%"] },
-        { id:"m3", name:"評審懲罰遵守協議", model:"monument", stage:2, desc:"扣分理由是「缺乏具體數字」,但協議規定沒把握就不給。", facts:["1 題評分標準互相衝突"] },
-        { id:"m4", name:"把沒生效當成弄壞", model:"monument", stage:2, desc:"租約題分數下降,其實是兩組都一樣放行,規則沒觸發。", facts:["1/4 → 0/4 就是 1 題翻掉"] },
-        { id:"m5", name:"題目設計錯兩次", model:"monument", stage:2, desc:"用了強模型第一次就會答對的題目;加了防護網又過頭。", facts:["2 次設計錯誤"] },
-        { id:"m6", name:"把省錢講成工具限制", model:"monument", stage:2, desc:"說只跑得起小模型,事實上 API 一直能用 gpt-5.1,卡住的只是一個參數名稱。", facts:["1 個參數名稱"] },
-        { id:"m7", name:"排程連續失敗三天", model:"monument", stage:2, desc:"API 額度用完後每日掃描一直崩,錯誤只寫進日誌檔。", facts:["連續 3 天沒人知道"] },
-        { id:"m8", name:"第一次手動測試不是盲評", model:"monument", stage:2, desc:"手動讀時以為 2 家守住立場,盲評之後效果消失。", facts:["3 家全退讓 vs 2 家守住"] }
+        { id:"m1", animal:"cat", name:"引用從未重現的 94%", model:"statue", stage:2, desc:"單輪、16 題、單一模型、模型評分的結果,被拿去做了影片。", facts:["94% 只出現過 1 次","單輪會漂 ±25 點"] },
+        { id:"m2", animal:"rabbit", name:"量尺壞了沒發現", model:"statue", stage:2, desc:"自動測評只送一輪就打分,立場題長期顯示 0%。", facts:["改成 2 輪後:0% → 61% / 72%"] },
+        { id:"m3", animal:"bear", name:"評審懲罰遵守協議", model:"statue", stage:2, desc:"扣分理由是「缺乏具體數字」,但協議規定沒把握就不給。", facts:["1 題評分標準互相衝突"] },
+        { id:"m4", animal:"fox", name:"把沒生效當成弄壞", model:"statue", stage:2, desc:"租約題分數下降,其實是兩組都一樣放行,規則沒觸發。", facts:["1/4 → 0/4 就是 1 題翻掉"] },
+        { id:"m5", animal:"penguin", name:"題目設計錯兩次", model:"statue", stage:2, desc:"用了強模型第一次就會答對的題目;加了防護網又過頭。", facts:["2 次設計錯誤"] },
+        { id:"m6", animal:"dog", name:"把省錢講成工具限制", model:"statue", stage:2, desc:"說只跑得起小模型,事實上 API 一直能用 gpt-5.1,卡住的只是一個參數名稱。", facts:["1 個參數名稱"] },
+        { id:"m7", animal:"owl", name:"排程連續失敗三天", model:"statue", stage:2, desc:"API 額度用完後每日掃描一直崩,錯誤只寫進日誌檔。", facts:["連續 3 天沒人知道"] },
+        { id:"m8", animal:"frog", name:"第一次手動測試不是盲評", model:"statue", stage:2, desc:"手動讀時以為 2 家守住立場,盲評之後效果消失。", facts:["3 家全退讓 vs 2 家守住"] }
       ] },
     { id:"web", name:"網站與 AI 資料", color:"#4f8fbf", q:-1, r:1, ground:"speckle", tree:"fruit",
       summary:"給人看的首頁與報告,加上給 AI 讀的結構化資料,全部放在 GitHub Pages。",
@@ -717,6 +717,36 @@ async function main() {
       p("box",0,.05,0,.7,.1,.7,C.stone); p("box",0,.14,0,.52,.08,.52,"#d8cbbd"); p("box",0,.18+h/2,0,.24,h,.24,"#e9e1d6"); p("hip",0,.18+h,0,.24,.2,.24,"#e9e1d6");
       p("box",0,.42,.125,.16,.2,.01,C.ink); p("cyl",-.22,.21,.22,.04,.06,.04,C.cream); p("glowsphere",-.22,.26,.22,.04,.06,.04,C.lamp);
       [C.pink,a,C.yellow].forEach((c, i) => p("sphere",.14+i*.06,.22,.24,.06,.06,.06,c)); },
+    // 雙手合十的動物雕像:大理石色,閉眼,台座前有花與蠟燭
+    statue(p, a, r, it) {
+      const M = "#ede7dd", M2 = "#d8cfc2", kind = it?.animal || "cat", T = kind === "penguin" || kind === "owl" ? 1.12 : 1;
+      p("rbox",0,.11,0,.62,.22,.56,"#cbbfaf"); p("rbox",0,.25,0,.5,.06,.46,"#ddd3c5"); p("box",0,.13,.285,.26,.09,.01,C.ink);
+      const by = .5 * T, hy = by + .34;
+      p("sphere",0,by,0,.42,.5 * T,.36,M);
+      for (const sx of [-.1,.1]) p("sphere",sx,.31,.1,.14,.08,.18,M2);
+      const headW = kind === "frog" ? .46 : .38, headH = kind === "frog" ? .28 : .34;
+      p("sphere",0,hy,.03,headW,headH,.34,M);
+      const eyeY = kind === "frog" ? hy + .13 : hy + .01, eyeX = kind === "frog" ? .1 : .07, eyeZ = kind === "frog" ? .12 : .19;
+      if (kind === "frog") for (const sx of [-1,1]) p("sphere",sx*eyeX,hy+.12,.05,.13,.12,.13,M);
+      if (kind === "owl") for (const sx of [-1,1]) p("torus",sx*.075,hy+.01,.17,.2,.2,.2,M2);
+      for (const sx of [-1,1]) p("box",sx*eyeX,eyeY,eyeZ,.06,.012,.01,C.ink,0,0,-sx*.25);
+      for (const sx of [-1,1]) p("cyl",sx*.085,by+.14*T,.11,.065,.23,.065,M,0,1.79,sx*.62);
+      p("sphere",-.022,by+.13*T,.2,.07,.11,.06,M); p("sphere",.022,by+.13*T,.2,.07,.11,.06,M);
+      const ear = (x, y, z, sx_, sy_, sz_, rz) => p("cone",x,y,z,sx_,sy_,sz_,M,0,0,rz);
+      if (kind === "cat") { for (const sx of [-1,1]) ear(sx*.1,hy+.16,.02,.09,.14,.09,-sx*.3);
+        [[.15,.35,-.15],[.22,.45,-.17],[.24,.57,-.15],[.2,.67,-.12]].forEach(([x,y,z]) => p("sphere",x,y,z,.07,.07,.07,M)); p("sphere",0,hy-.02,.2,.03,.025,.02,"#e8b4b8"); }
+      else if (kind === "rabbit") { for (const sx of [-1,1]) p("sphere",sx*.06,hy+.27,-.01,.07,.3,.05,M,0,0,-sx*.12); p("sphere",0,.36,-.2,.12,.12,.12,M); p("sphere",0,hy-.02,.2,.03,.025,.02,"#e8b4b8"); }
+      else if (kind === "bear") { for (const sx of [-1,1]) p("sphere",sx*.13,hy+.13,0,.1,.1,.08,M); p("sphere",0,hy-.05,.16,.14,.1,.1,M2); p("sphere",0,hy-.03,.21,.04,.03,.03,C.ink); }
+      else if (kind === "fox") { for (const sx of [-1,1]) ear(sx*.1,hy+.17,.01,.12,.18,.1,-sx*.28); p("cone",0,hy-.04,.2,.11,.15,.11,M,0,Math.PI/2); p("sphere",0,hy-.04,.28,.03,.03,.03,C.ink);
+        p("ico",.18,.42,-.14,.24,.4,.24,M,0,0,-.6); p("sphere",.29,.6,-.16,.1,.12,.1,M2); }
+      else if (kind === "penguin") { p("cone",0,hy-.03,.2,.06,.09,.06,M2,0,Math.PI/2); p("sphere",0,by-.02,.08,.3,.38,.22,M2); }
+      else if (kind === "dog") { for (const sx of [-1,1]) p("sphere",sx*.16,hy+.03,0,.08,.15,.05,M2,0,0,sx*.5); p("sphere",0,hy-.05,.17,.13,.09,.1,M2); p("sphere",0,hy-.03,.22,.04,.03,.03,C.ink);
+        p("torus",0,.55,-.19,.22,.22,.22,M,Math.PI/2); }
+      else if (kind === "owl") { for (const sx of [-1,1]) ear(sx*.11,hy+.15,0,.06,.1,.06,-sx*.35); p("cone",0,hy-.04,.19,.05,.07,.05,M2,Math.PI); }
+      else if (kind === "frog") { p("box",0,hy-.06,.17,.16,.012,.01,C.ink); }
+      p("sphere",-.2,.3,.22,.06,.06,.06,C.pink); p("sphere",-.14,.3,.24,.05,.05,.05,C.yellow); p("sphere",-.25,.3,.25,.05,.05,.05,a);
+      p("cyl",.2,.31,.2,.04,.06,.04,C.cream); p("glowsphere",.2,.36,.2,.035,.05,.035,C.lamp);
+    },
     gate(p, a) { for (const x of [-.34,.34]) { p("rbox",x,.4,0,.16,.8,.16,a); p("glowsphere",x,.62,.12,.07,.09,.07,C.lamp); }
       p("box",0,.86,0,.95,.1,.24,C.wood); p("hip",0,.91,0,1,.3,.3,C.ink); p("rbox",0,.72,0,.4,.12,.04,C.cream); p("box",0,.02,0,.9,.04,.4,C.stone); },
     lighthouse(p, a) { p("ico",0,.12,0,.8,.3,.7,C.stone);
@@ -839,6 +869,7 @@ async function main() {
     for (let k = 0; k < 6; k++) {
       const a = Math.PI / 6 + k * Math.PI / 3, lx = x + Math.cos(a) * 1.9, lz = z + Math.sin(a) * 1.9;
       const p = maker(kit, baseM(lx, ty, lz), own);
+      if (k === s.index % 3) s.bowHost = { pos:new V3(lx + Math.cos(a) * .035, ty + .3, lz + Math.sin(a) * .035), ry:Math.atan2(Math.cos(a), Math.sin(a)), name:s.name, where:"的路燈上" };
       p("cyl",0,.22,0,.03,.44,.03,C.ink); p("glowsphere",0,.47,0,.09,.09,.09,C.lamp); p("cyl",0,.02,0,.08,.04,.08,C.ink);
       lampSpots.push(new V3(lx, ty + .012, lz));
       const a2 = a + Math.PI / 3, rr = R - .06;
@@ -906,13 +937,13 @@ async function main() {
       }
     }
     s.items.forEach((it, k) => {
-      const main = k === 0 && !s.park, sc = s.park ? .5 : main ? (s.lift ? 1.32 : 1.15) : cell * .9;
+      const main = k === 0 && !s.park, sc = s.park ? .58 : main ? (s.lift ? 1.32 : 1.15) : cell * .9;
       const sp = s.park ? { x:Math.cos(parkAng(k)) * PARK_R, z:Math.sin(parkAng(k)) * PARK_R } : main ? { x:0, z:-.58 } : pts[k - 1] || { x:0, z:.9 };
       it.pos = new V3(x + sp.x, ty, z + sp.z); it.scale = sc; it.top = ty + sc * 1.2;
       const r = mulberry32(k * 131 + s.index * 7919);
       const ry = s.park ? Math.atan2(Math.cos(parkAng(k)), Math.sin(parkAng(k))) : main ? 0 : (r() - .5) * .5;
       const p = maker(kit, baseM(it.pos.x, ty, it.pos.z, sc, ry), { type:"item", id:it.id }, r);
-      (MODELS[it.model] || MODELS.house)(p, s.color, r);
+      (MODELS[it.model] || MODELS.house)(p, s.color, r, it);
     });
 
     // 島名標籤(前側崖邊)
@@ -970,6 +1001,7 @@ async function main() {
     // 碼頭頭的燈與繫船柱
     for (const sd of [-1, 1]) { const c = harbor.tip.clone().addScaledVector(hDir, -.15).addScaledVector(hPerp, sd * .24);
       wp("cyl", c.x, pierY + .25, c.z, .03, .5, .03, C.ink); wp("glowsphere", c.x, pierY + .52, c.z, .09, .09, .09, C.lamp); lampSpots.push(c.clone().setY(WATER_Y + .02));
+      if (sd === -1) harbor.bowHost = { pos:c.clone().setY(pierY + .3).addScaledVector(hPerp, -.035), ry:Math.atan2(-hPerp.x, -hPerp.z), name:hb.name, where:"碼頭頭的路燈上" };
       const b = harbor.tip.clone().addScaledVector(hDir, -.6).addScaledVector(hPerp, sd * .22); wp("cyl", b.x, pierY + .06, b.z, .07, .1, .07, C.ink); }
     const mid = harbor.root.clone().addScaledVector(hDir, L * .3).addScaledVector(hPerp, -.24);
     wp("cyl", mid.x, pierY + .25, mid.z, .03, .5, .03, C.ink); wp("glowsphere", mid.x, pierY + .52, mid.z, .09, .09, .09, C.lamp); lampSpots.push(mid.clone().setY(WATER_Y + .02));
@@ -1009,6 +1041,46 @@ async function main() {
   const beam = new THREE.Group(); beam.position.copy(beacon.lamp);
   for (const r of [0, Math.PI]) { const m = new THREE.Mesh(beamGeo, beamMat); m.rotation.y = r; m.renderOrder = 5; beam.add(m); }
   beam.visible = false; scene.add(beam);
+
+  // ---------- 小彩蛋:洋流飄帶蝴蝶結(每座島一條,碼頭一條) ----------
+  const ribbonTex = (() => {
+    const c = document.createElement("canvas"); c.width = 64; c.height = 256; const g = c.getContext("2d");
+    g.fillStyle = "#ec5a2c"; g.fillRect(0, 0, 64, 256); g.fillStyle = "#fffaf3"; g.fillRect(12, 0, 40, 256);
+    g.fillStyle = "#1d1a18"; g.font = `900 34px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`; g.textAlign = "center"; g.textBaseline = "middle";
+    ["洋", "流", "洋", "流"].forEach((ch, i) => g.fillText(ch, 32, 32 + i * 64));
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+  })();
+  const ribbonMat = new THREE.MeshStandardMaterial({ map:ribbonTex, side:THREE.DoubleSide, roughness:.65 });
+  function ribbonStrip(pts, w, sideOf, reverse) {
+    const pos = [], uv = [], idx = []; let len = 0; const lens = [0];
+    for (let i = 1; i < pts.length; i++) { len += pts[i].distanceTo(pts[i - 1]); lens.push(len); }
+    pts.forEach((pt, i) => { const t = pts[Math.min(i + 1, pts.length - 1)].clone().sub(pts[Math.max(i - 1, 0)]).normalize(), sd = sideOf(t).multiplyScalar(w / 2);
+      pos.push(pt.x - sd.x, pt.y - sd.y, pt.z - sd.z, pt.x + sd.x, pt.y + sd.y, pt.z + sd.z);
+      const v = (reverse ? len - lens[i] : lens[i]) / (w * 3.2); uv.push(0, v, 1, v);
+      if (i) { const b = (i - 1) * 2; idx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2); } });
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    geo.setIndex(idx); geo.computeVertexNormals(); return geo;
+  }
+  const Z = new V3(0, 0, 1), bows = [], bowMeshes = [];
+  [...islands.map(s => s.bowHost), harbor.bowHost].forEach((host, i) => {
+    if (!host) return;
+    const g = new THREE.Group(), w = .06; g.position.copy(host.pos); g.rotation.y = host.ry;
+    for (const sx of [-1, 1]) {
+      const pts = []; for (let k = 0; k <= 28; k++) { const th = k / 28 * Math.PI * 2, x = sx * .07 * (1 - Math.cos(th)); pts.push(new V3(x, .055 * Math.sin(th) + Math.abs(x) * .35, 0)); }
+      g.add(new THREE.Mesh(ribbonStrip(pts, w, () => Z.clone()), ribbonMat));
+    }
+    const tails = [];
+    for (const sx of [-1, 1]) {
+      const curve = new THREE.CatmullRomCurve3([new V3(0, 0, 0), new V3(sx * .05, -.1, .015), new V3(sx * .08, -.2, -.01), new V3(sx * .1, -.3, .01)]);
+      const piv = new THREE.Group(); piv.add(new THREE.Mesh(ribbonStrip(curve.getPoints(16), w, t => new V3().crossVectors(t, Z).normalize(), true), ribbonMat));
+      g.add(piv); tails.push(piv);
+    }
+    g.add(new THREE.Mesh(new RoundedBoxGeometry(.05, .058, .036, 2, .012), ribbonMat));
+    g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.userData.bow = i; bowMeshes.push(o); } });
+    scene.add(g); bows.push({ g, tails, host, phase:i * 1.7 });
+  });
+  const BOW_KEY = "aletheia-ribbons";
+  const foundBows = new Set((() => { try { return JSON.parse(store.get(BOW_KEY) || "[]"); } catch { return []; } })());
 
   // ---------- 行人路網(每島 12 節點 + 橋)與 Dijkstra ----------
   const nodes = [], adj = [];
@@ -1655,6 +1727,16 @@ async function main() {
     if (!w.name) { const el = document.createElement("div"); el.className = "bubble"; el.textContent = `正在搬${flows[w.f].cargo}`; w.name = new CSS2DObject(el); w.name.visible = false; scene.add(w.name); }
     openCard(walkerCard(w)); walkerPoint(w); focus(w.pos.clone(), [1.3, 1.9, 2.6]);
   }
+  function selectBow(i) {
+    const b = bows[i]; foundBows.add(i); store.set(BOW_KEY, JSON.stringify([...foundBows]));
+    state.sel = { type:"bow" }; selectedOwners = new Set(); recolor(); showFlows([]); setLabels(null); clearPins();
+    const n = foundBows.size, total = bows.length;
+    openCard(`<div class="eyebrow">小彩蛋 · 洋流飄帶</div><h2>第 ${i + 1} 條 / 共 ${total} 條</h2>
+      <p>你找到了綁在${esc(b.host.name)}${esc(b.host.where)}的洋流飄帶。</p>
+      <div class="tiles"><div class="tile"><b>${n}<small style="display:inline;font-size:13px;color:inherit"> / ${total}</small></b><small>已找到的飄帶</small></div></div>
+      <p>${n === total ? `${total} 條都找到了。` : "每座島和碼頭各綁了一條,繼續找找看。"}</p>`);
+    focus(b.host.pos.clone(), [.9, 1.1, 1.6]);
+  }
   function selectBeacon() {
     state.sel = { type:"beacon" }; selectedOwners = new Set(); recolor(); showFlows([]); setLabels(null); clearPins();
     beacon.label.classList.add("sel");
@@ -1683,6 +1765,8 @@ async function main() {
     ray.setFromCamera(ndc, camera);
     walkerMeshes.body.boundingSphere = null; walkerMeshes.head.boundingSphere = null;
     const targets = [walkerMeshes.body, walkerMeshes.head, ...flows.filter(f => f.tube.visible).map(f => f.tube), ...kitMeshes, ...islandTops, ...ferries];
+    const hitBow = ray.intersectObjects(bowMeshes, false)[0];
+    if (hitBow) { const near = ray.intersectObjects(targets, false)[0]; if (!near || near.distance > hitBow.distance - .05) return selectBow(hitBow.object.userData.bow); }
     const hit0 = ray.intersectObjects(ferries, true)[0];
     if (hit0) { const near = ray.intersectObjects(targets.slice(0, -1), false)[0]; if (!near || near.distance > hit0.distance) return selectHarbor(); }
     const hit = ray.intersectObjects(targets, false)[0];
@@ -1840,6 +1924,7 @@ async function main() {
       ferries.forEach(f => placeFerry(f, dt));
       checkFireworkClock(dt);
       spMat.uniforms.uTime.value = state.time; beam.rotation.y += dt * .7;
+      bows.forEach(b => b.tails.forEach((t, k) => { t.rotation.z = Math.sin(state.time * 2.2 + b.phase + k * 1.3) * .14; t.rotation.x = Math.sin(state.time * 1.7 + b.phase) * .1; }));
       if (rockets.length || fw.live || flash.intensity) updateFireworks(dt);
       dirty = true;
     }
