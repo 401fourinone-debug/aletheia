@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Aletheia 真實島</title>
-<meta name="description" content="Aletheia 真實引擎協議的運作機制,做成一座 3D 六角島城市:12 座島、67 棟建物、10 條協作線,小人搬著題目、答案和分數在島之間走。">
+<meta name="description" content="Aletheia 真實引擎協議的運作機制,做成一座 3D 六角島城市:12 座島、67 棟建物、12 條協作線,小人搬著題目、答案和分數在島之間走,訪客搭渡輪從碼頭上岸參與評測。">
 <style>
 /* 版面:全螢幕 3D 島城,左上品牌卡與工具列,左側詳細卡,右側清單與日誌,底部時段 HUD。黏土微縮城市,單一淺色介面 */
 :root {
@@ -270,7 +270,7 @@ dl.kv dt { color:var(--muted); } dl.kv dd { margin:0; font-weight:700; }
     <ol>
       <li><div><b>拖曳旋轉,滾輪或雙指縮放</b><small>按「全景」回到整座城市;方向鍵也能轉。</small></div></li>
       <li><div><b>點島、建物或小人</b><small>左邊會打開卡片:數字、狀態、證據有沒有重現。</small></div></li>
-      <li><div><b>打開「協作線」</b><small>小人搬著題目、答案、分數在島之間走,日誌會即時記錄交接。</small></div></li>
+      <li><div><b>打開「協作線」,或切到夜晚</b><small>小人搬著題目、答案、分數在島之間走。夜裡島緣燈條亮起,渡輪載訪客到碼頭上岸參與評測。</small></div></li>
     </ol>
     <button class="btn" id="introGo" type="button" aria-pressed="true">開始逛</button>
   </div>
@@ -411,8 +411,13 @@ const DATA = {
     { id:"f-json",   from:"hq",     to:"web",    cargo:"protocol.json", glyph:"{}", role:"工程師", level:"official", desc:"協議同步成給 AI 讀的結構化資料。" },
     { id:"f-mistake",from:"report", to:"memo",   cargo:"錯誤紀錄", glyph:"錯", role:"編輯",   level:"official", desc:"做錯的事寫成紀念碑,不刪。" },
     { id:"f-counter",from:"port",   to:"bank",   cargo:"反例",     glyph:"例", role:"讀者",   level:"thematic", desc:"使用者回報的反例,採納後變成新題目。不定期才有。" },
-    { id:"f-claude", from:"todo",   to:"lab",    cargo:"Claude 測試", glyph:"測", role:"工程師", level:"pending", desc:"還沒開始:要在 Claude 上重跑整套測評。" }
+    { id:"f-claude", from:"todo",   to:"lab",    cargo:"Claude 測試", glyph:"測", role:"工程師", level:"pending", desc:"還沒開始:要在 Claude 上重跑整套測評。" },
+    { id:"f-visit",  from:"harbor", to:"lab",    cargo:"自己的題目", glyph:"試", role:"訪客", level:"thematic", desc:"訪客搭船上岸,帶著自己的問題到實驗室,用「有協議」和「沒協議」親自比一次。" },
+    { id:"f-report", from:"harbor", to:"port",   cargo:"反例回報", glyph:"回", role:"訪客", level:"thematic", desc:"試出「套了協議反而變糟」的訪客,把結果照回報格式交給反例港。" }
   ],
+  harbor: { island:"port", angle:180, length:2.6, name:"訪客碼頭", color:"#2f7fa8",
+    desc:"任何人都能上島參與評測。findings 附了一個 30 秒的實驗:把一段藏了指令的文字貼給你平常用的 AI,看它會不會告訴你。",
+    facts:["30 秒就能自己驗證","短版提示命中 50%,完整版 100%","回報格式 4 個欄位,幫助程度 1–5 分"] },
   dayCycle: [
     { start:0,    label:"記錯誤、排待辦", items:["m1","m2","m3","m4","m5","m6","m7","m8","t-claude","t-judge","t-more","t-gap","t-human","t-alert"] },
     { start:360,  label:"寫協議",         items:["hq-1","hq-2","hq-3","hq-4","hq-5"] },
@@ -436,7 +441,8 @@ const DATA = {
     "信差":   { body:"#58a6a6", hair:"#4a3226", hat:"cap",   hatColor:"#db6a41" },
     "編輯":   { body:"#f2b5c6", hair:"#2e2320", hat:"beret", hatColor:"#6f7fb5" },
     "工程師": { body:"#ef8a3c", hair:"#3a2a22", hat:"hard",  hatColor:"#fcea8b" },
-    "讀者":   { body:"#9cc27a", hair:"#5a3a26", hat:"cap",   hatColor:"#3e7c8c" }
+    "讀者":   { body:"#9cc27a", hair:"#5a3a26", hat:"cap",   hatColor:"#3e7c8c" },
+    "訪客":   { body:"#fcea8b", hair:"#4a3226", hat:"cap",   hatColor:"#2f7fa8" }
   }
 };
 
@@ -489,10 +495,16 @@ async function main() {
   const islandById = Object.fromEntries(islands.map(s => [s.id, s]));
   const items = [], itemById = {};
   islands.forEach(s => s.items.forEach((it, k) => { it.island = s; it.k = k; items.push(it); itemById[it.id] = it; }));
-  const flows = DATA.flows.map((f, i) => ({ ...f, index:i, A:islandById[f.from], B:islandById[f.to] }));
+  const hb = DATA.harbor, hIsl = islandById[hb.island], hRad = hb.angle * Math.PI / 180;
+  const hDir = new V3(Math.cos(hRad), 0, Math.sin(hRad)), hPerp = new V3(-hDir.z, 0, hDir.x);
+  const harbor = { ...hb, isHarbor:true, index:-1, dir:hDir,
+    root:hIsl.pos.clone().addScaledVector(hDir, INR), tip:hIsl.pos.clone().addScaledVector(hDir, INR + hb.length) };
+  harbor.pos = harbor.root.clone().lerp(harbor.tip, .55);
+  const place = id => id === "harbor" ? harbor : islandById[id];
+  const flows = DATA.flows.map((f, i) => ({ ...f, index:i, A:place(f.from), B:place(f.to) }));
   const center = islands.reduce((a, s) => a.add(s.pos), new V3()).multiplyScalar(1 / islands.length);
   center.y = 0.4;
-  $("#stats").textContent = `${islands.length} 座島 · ${items.length} 棟建物 · ${flows.length} 條協作線 · ${Object.keys(DATA.roles).length} 種小人`;
+  $("#stats").textContent = `${islands.length} 座島 · ${items.length} 棟建物 · ${flows.length} 條協作線 · 1 座訪客碼頭`;
 
   // ---------- 渲染器、相機 ----------
   const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, powerPreference:"high-performance" });
@@ -770,7 +782,7 @@ async function main() {
   const pathMat = flatMat("#e9cfb6"), curbMat = flatMat("#e4d6c3");
   const shallowMat = new THREE.MeshBasicMaterial({ color:"#cdeae6", transparent:true, opacity:.55, depthWrite:false });
   const foamMat = new THREE.MeshBasicMaterial({ color:"#ffffff", transparent:true, opacity:.55, depthWrite:false });
-  const lampSpots = [];
+  const lampSpots = [], bulbs = [], stripMats = [], strips = [];
 
   for (const s of islands) {
     const { x, z } = s.pos;
@@ -795,6 +807,14 @@ async function main() {
     const wm = new THREE.Mesh(wall, sideMat); wm.position.set(x, TOP - .16 - wallH / 2, z); wm.receiveShadow = true; scene.add(wm);
     const band = new THREE.Mesh(new THREE.CylinderGeometry(R, R, .16, 6, 1, true), new THREE.MeshStandardMaterial({ map:bandTexture(s.color), roughness:.85 }));
     band.position.set(x, TOP - .08, z); scene.add(band);
+    // 夜間燈條:島頂邊緣一圈、崖邊一圈,顏色取島的主色
+    const glowCol = new Col(s.color).lerp(new Col("#ffffff"), .12).multiplyScalar(1.35);
+    const stripMat = new THREE.MeshBasicMaterial({ color:glowCol, toneMapped:false, transparent:true, opacity:0, depthWrite:false });
+    stripMats.push(stripMat);
+    const strip1 = new THREE.Mesh(ringGeo(R - .036, R + .006), stripMat); strip1.position.set(x, TOP + .009, z);
+    const strip2 = new THREE.Mesh(new THREE.CylinderGeometry(R + .006, R + .006, .03, 6, 1, true), stripMat); strip2.position.set(x, TOP - .03, z);
+    const strip3 = new THREE.Mesh(new THREE.CylinderGeometry(R + .03, R + .03, .025, 6, 1, true), stripMat); strip3.position.set(x, TOP - .14, z);
+    for (const m of [strip1, strip2, strip3]) { m.renderOrder = 3; m.visible = false; scene.add(m); strips.push(m); }
 
     // 外圈:路燈、串燈、灌木、大樹
     const own = { type:"island", i:s.index };
@@ -803,10 +823,10 @@ async function main() {
       const p = maker(kit, baseM(lx, TOP, lz), own);
       p("cyl",0,.22,0,.03,.44,.03,C.ink); p("glowsphere",0,.47,0,.09,.09,.09,C.lamp); p("cyl",0,.02,0,.08,.04,.08,C.ink);
       lampSpots.push(new V3(lx, TOP + .012, lz));
-      const a2 = a + Math.PI / 3, rr = R - .075;
-      for (let j = 1; j < 5; j++) {
-        const t = j / 5, cx = x + (Math.cos(a) * (1 - t) + Math.cos(a2) * t) * rr, cz = z + (Math.sin(a) * (1 - t) + Math.sin(a2) * t) * rr;
-        maker(kit, baseM(cx, TOP + .03, cz), own)("glowsphere",0,0,0,.035,.035,.035,"#ffe1a8");
+      const a2 = a + Math.PI / 3, rr = R - .06;
+      for (let j = 0; j < 9; j++) {
+        const t = (j + .5) / 9;
+        bulbs.push({ p:new V3(x + (Math.cos(a) * (1 - t) + Math.cos(a2) * t) * rr, TOP + .035, z + (Math.sin(a) * (1 - t) + Math.sin(a2) * t) * rr), g:s.index, j:k * 9 + j });
       }
       for (const t of [.3, .7]) {
         const a3 = a + t * Math.PI / 3, rr2 = 1.4 / Math.cos(a3 - (a + Math.PI / 6));
@@ -878,6 +898,44 @@ async function main() {
     bridgePts[i + "-" + j] = pts;
   }
 
+  // ---------- 訪客碼頭 ----------
+  const pierY = TOP - .02, pierRy = Math.atan2(hDir.x, hDir.z), hOwn = { type:"harbor" };
+  {
+    const L = hb.length, n = 16, wp = maker(kit, new THREE.Matrix4(), hOwn);
+    for (let k = 0; k < n; k++) { const c = harbor.root.clone().addScaledVector(hDir, (k + .5) / n * L);
+      wp("box", c.x, pierY, c.z, .58, .04, L / n * .86, k % 2 ? C.wood : "#a87a55", pierRy); }
+    for (let k = 0; k <= 4; k++) for (const sd of [-1, 1]) {
+      const c = harbor.root.clone().addScaledVector(hDir, k / 4 * L).addScaledVector(hPerp, sd * .27), h = pierY - WATER_Y + .25;
+      wp("cyl", c.x, WATER_Y - .25 + h / 2 + .06, c.z, .07, h, .07, "#7a5a40");
+      for (let t = 0; t < 4 && k < 4; t++) { const b = c.clone().addScaledVector(hDir, (t + .5) / 4 * L / 4); bulbs.push({ p:b.setY(pierY + .09), g:-1, j:k * 4 + t }); }
+    }
+    // 入口拱門與售票亭
+    for (const sd of [-1, 1]) { const c = harbor.root.clone().addScaledVector(hPerp, sd * .3); wp("rbox", c.x, pierY + .36, c.z, .09, .72, .09, hb.color); wp("glowsphere", c.x, pierY + .76, c.z, .08, .08, .08, C.lamp); }
+    const g = harbor.root.clone(); wp("rbox", g.x, pierY + .7, g.z, .7, .14, .06, C.coral, pierRy + Math.PI / 2);
+    wp("box", g.x, pierY + .7, g.z, .5, .05, .07, C.cream, pierRy + Math.PI / 2);
+    const plat = harbor.root.clone().addScaledVector(hDir, L * .5).addScaledVector(hPerp, .62);
+    wp("box", plat.x, pierY, plat.z, .7, .05, .7, "#a87a55", pierRy);
+    for (const [dx, dz] of [[-.3, -.3], [.3, -.3], [-.3, .3], [.3, .3]]) wp("cyl", plat.x + dx, WATER_Y + .35, plat.z + dz, .06, pierY - WATER_Y + .1, .06, "#7a5a40");
+    MODELS.stall(maker(kit, baseM(plat.x, pierY + .02, plat.z, .58, pierRy + Math.PI), hOwn), hb.color, rnd);
+    // 碼頭頭的燈與繫船柱
+    for (const sd of [-1, 1]) { const c = harbor.tip.clone().addScaledVector(hDir, -.15).addScaledVector(hPerp, sd * .24);
+      wp("cyl", c.x, pierY + .25, c.z, .03, .5, .03, C.ink); wp("glowsphere", c.x, pierY + .52, c.z, .09, .09, .09, C.lamp); lampSpots.push(c.clone().setY(WATER_Y + .02));
+      const b = harbor.tip.clone().addScaledVector(hDir, -.6).addScaledVector(hPerp, sd * .22); wp("cyl", b.x, pierY + .06, b.z, .07, .1, .07, C.ink); }
+    const mid = harbor.root.clone().addScaledVector(hDir, L * .3).addScaledVector(hPerp, -.24);
+    wp("cyl", mid.x, pierY + .25, mid.z, .03, .5, .03, C.ink); wp("glowsphere", mid.x, pierY + .52, mid.z, .09, .09, .09, C.lamp); lampSpots.push(mid.clone().setY(WATER_Y + .02));
+    // 繫在碼頭邊的小划船
+    for (const [t, sd, col] of [[.2, 1, C.coral], [.82, 1, "#58a6a6"]]) {
+      const c = harbor.root.clone().addScaledVector(hDir, L * t).addScaledVector(hPerp, sd * .6);
+      const bp = maker(kit, baseM(c.x, WATER_Y + .02, c.z, 1, pierRy), hOwn);
+      bp("rbox", 0, .06, 0, .3, .1, .62, col); bp("box", 0, .1, 0, .22, .04, .5, C.cream); bp("box", 0, .14, 0, .3, .02, .06, C.wood);
+    }
+    const el = document.createElement("button"); el.type = "button"; el.className = "ilabel"; el.style.setProperty("--c", hb.color);
+    el.innerHTML = `<em>⚓</em><span>${esc(hb.name)}</span>`;
+    el.addEventListener("click", ev => { ev.stopPropagation(); selectHarbor(); });
+    const lab = new CSS2DObject(el); lab.position.copy(harbor.tip).setY(pierY + .05).addScaledVector(hPerp, .5); scene.add(lab);
+    harbor.label = el;
+  }
+
   // ---------- 行人路網(每島 12 節點 + 橋)與 Dijkstra ----------
   const nodes = [], adj = [];
   const addNode = v => { nodes.push(v); adj.push([]); return nodes.length - 1; };
@@ -908,7 +966,14 @@ async function main() {
     }
     const out = []; for (let u = b; u >= 0; u = prev[u]) out.unshift(nodes[u]); return out;
   }
-  const endNode = (s, other) => ringNodes[s.index][other.pos.x >= s.pos.x ? 11 : 7];
+  const pierNodes = [];
+  {
+    let prev = ringNodes[hIsl.index][Math.round(((hb.angle % 360) + 360) % 360 / 30)];
+    const from = hIsl.pos.clone().addScaledVector(hDir, INR), steps = 8;
+    for (let k = 0; k <= steps; k++) { const v = from.clone().addScaledVector(hDir, k / steps * (hb.length - .35)); v.y = pierY + .03;
+      const nd = addNode(v); link(prev, nd); prev = nd; pierNodes.push(nd); }
+  }
+  const endNode = (s, other) => s.isHarbor ? pierNodes[pierNodes.length - 1] : ringNodes[s.index][other.pos.x >= s.pos.x ? 11 : 7];
   for (const f of flows) {
     f.path = dijkstra(endNode(f.A, f.B), endNode(f.B, f.A));
     f.cum = [0]; for (let i = 1; i < f.path.length; i++) f.cum.push(f.cum[i - 1] + f.path[i].distanceTo(f.path[i - 1]));
@@ -1040,6 +1105,28 @@ async function main() {
   lampSpots.forEach((v, i) => pools.setMatrixAt(i, new THREE.Matrix4().compose(v, new THREE.Quaternion(), new V3(.9, 1, .9))));
   pools.renderOrder = 1; scene.add(pools);
 
+  // ---------- 遊樂園跑馬燈:島緣與碼頭的燈泡,夜裡依序閃動 ----------
+  const bulbMat = new THREE.MeshBasicMaterial({ toneMapped:false });
+  const haloMat = new THREE.MeshBasicMaterial({ toneMapped:false, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false });
+  const bulbMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(.026, 8, 6), bulbMat, bulbs.length);
+  const haloMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(.052, 10, 8), haloMat, bulbs.length);
+  const BULB_DAY = new Col("#efe3cf"), BULB_PAL = ["#ffd25e", "#ff7a59", "#7fe3ff", "#ff9ad5", "#b8ff8a"].map(c => new Col(c)), _b1 = new Col(), _b2 = new Col();
+  bulbs.forEach((b, i) => { const m = new THREE.Matrix4().makeTranslation(b.p.x, b.p.y, b.p.z); bulbMesh.setMatrixAt(i, m); haloMesh.setMatrixAt(i, m);
+    bulbMesh.setColorAt(i, BULB_DAY); haloMesh.setColorAt(i, BULB_DAY); });
+  haloMesh.renderOrder = 4; haloMesh.visible = false; scene.add(bulbMesh, haloMesh);
+  let bulbKey = "";
+  function updateBulbs() {
+    const night = state.night || 0, step = state.reduced ? 0 : Math.floor(state.time * 6), key = night.toFixed(2) + ":" + step;
+    if (key === bulbKey) return; bulbKey = key;
+    bulbs.forEach((b, i) => {
+      const lit = state.reduced || (b.j + step) % 4 !== 0;
+      _b1.copy(BULB_PAL[(Math.floor(b.j / 3) + (b.g + 5)) % 5]); if (!lit) _b1.multiplyScalar(.18);
+      _b2.copy(BULB_DAY).lerp(_b1, night); bulbMesh.setColorAt(i, _b2); haloMesh.setColorAt(i, _b1);
+    });
+    bulbMesh.instanceColor.needsUpdate = true; haloMesh.instanceColor.needsUpdate = true;
+    haloMat.opacity = night * .45; haloMesh.visible = night > .02;
+  }
+
   // ---------- 遠景:盆地地形、背景樹、遠山、雲、海上點綴 ----------
   const noise = new SimplexNoise({ random:mulberry32(77) });
   const fbm = (x, z) => { let a = 0, amp = 1, f = 1; for (let o = 0; o < 4; o++) { a += noise.noise(x * f, z * f) * amp; amp *= .5; f *= 2.03; } return a; };
@@ -1103,14 +1190,54 @@ async function main() {
     p("ico", 0, .05, 0, 1.6, .5, 1.3, "#d9c9a3"); p("ico", .2, .3, -.1, .6, .5, .6, C.leaf2);
     if (i === 1) { MODELS.lighthouse(maker(kit, baseM(x - .2, WATER_Y + .2, z, .9), own), C.coral, rnd); }
   });
+  // 繞著群島航行的帆船(夜裡桅頂有燈)
+  const boatMat = c => new THREE.MeshStandardMaterial({ color:c, roughness:.8 });
+  const sailMat = new THREE.MeshStandardMaterial({ color:"#ffffff", roughness:.9, side:THREE.DoubleSide });
+  function mesh(geo, mat, x, y, z, sx, sy, sz, rx = 0, ry = 0) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.rotation.set(rx, ry, 0); m.castShadow = true; return m; }
   const boats = [];
-  for (let i = 0; i < 3; i++) {
-    const g = new THREE.Group(); const hull = new THREE.Mesh(G.prism, new THREE.MeshStandardMaterial({ color:i === 1 ? C.coral : "#f4ebdd", roughness:.8 }));
-    hull.scale.set(.5, .22, 1.1); hull.rotation.x = Math.PI; hull.position.y = .22;
-    const sail = new THREE.Mesh(G.prism, new THREE.MeshStandardMaterial({ color:"#ffffff", roughness:.9, side:THREE.DoubleSide }));
-    sail.scale.set(.02, 1, .7); sail.rotation.y = Math.PI / 2; sail.position.set(0, .24, -.05); sail.rotation.set(0, 0, 0); sail.scale.set(.6, 1, .02);
-    g.add(hull, sail); g.position.set(center.x - 12 + i * 11, WATER_Y, center.z + 13 + (i % 2) * 4); g.rotation.y = i * 1.3;
-    g.traverse(o => { o.castShadow = true; }); scene.add(g); boats.push(g);
+  const sailCols = ["#fff8f4", "#db6a41", "#58a6a6", "#fcea8b", "#f2b5c6", "#6f7fb5"];
+  for (let i = 0; i < 6; i++) {
+    const g = new THREE.Group();
+    g.add(mesh(G.prism, boatMat(i % 2 ? "#f4ebdd" : "#8a5a3c"), 0, .2, 0, .42, .2, 1.0, Math.PI));
+    g.add(mesh(G.cyl, boatMat(C.ink), 0, .6, .05, .03, .8, .03));
+    g.add(mesh(G.prism, i % 3 === 0 ? sailMat : boatMat(sailCols[i]), 0, .24, .02, .55, .75, .015, 0, Math.PI / 2));
+    g.add(mesh(G.sphere, glowMat, 0, 1.02, .05, .07, .07, .07));
+    g.userData = { a:i / 6 * Math.PI * 2 + .3, speed:(.022 + (i % 3) * .006) * (i % 2 ? 1 : -1), rx:14.5 + (i % 2) * 1.5, rz:11 + (i % 3) };
+    scene.add(g); boats.push(g);
+  }
+  function placeBoat(g) { const u = g.userData, x = center.x + Math.cos(u.a) * u.rx, z = center.z + Math.sin(u.a) * u.rz;
+    const tx = -Math.sin(u.a) * u.rx * Math.sign(u.speed), tz = Math.cos(u.a) * u.rz * Math.sign(u.speed);
+    g.position.set(x, WATER_Y + Math.sin(state.time * 1.3 + u.a * 3) * .03, z); g.rotation.set(0, Math.atan2(tx, tz), Math.sin(state.time + u.a) * .05); }
+  // 載訪客的渡輪:從外海駛向碼頭,靠岸停一下再離開
+  const T = harbor.tip, P = hPerp, D = hDir;
+  const ferryCurve = new THREE.CatmullRomCurve3([
+    T.clone().addScaledVector(D, 9).addScaledVector(P, -4), T.clone().addScaledVector(D, 4.2).addScaledVector(P, -2.4),
+    T.clone().addScaledVector(D, -.35).addScaledVector(P, -.66), T.clone().addScaledVector(D, 4).addScaledVector(P, 1.4),
+    T.clone().addScaledVector(D, 9).addScaledVector(P, 3.2)].map(v => v.setY(WATER_Y)), true);
+  const ferryLen = ferryCurve.getLength(), DOCK_U = 2 / 5;
+  const ferries = [0, .5].map((u0, i) => {
+    const g = new THREE.Group();
+    g.add(mesh(G.rbox, boatMat("#f4ebdd"), 0, .12, 0, .6, .2, 1.3));
+    g.add(mesh(G.box, boatMat(hb.color), 0, .2, 0, .62, .05, 1.32));
+    g.add(mesh(G.rbox, boatMat(C.cream), 0, .36, -.18, .44, .26, .5));
+    g.add(mesh(G.box, boatMat(C.coral), 0, .52, -.18, .54, .04, .62));
+    for (const sz of [-.3, .3]) g.add(mesh(G.box, glowMat, sz * .74, .37, -.18, .02, .1, .14));
+    g.add(mesh(G.sphere, glowMat, 0, .62, -.18, .08, .08, .08));
+    ["#f2b5c6", "#fcea8b", "#9cc27a"].forEach((c, k) => { g.add(mesh(G.sphere, boatMat("#f3d2b8"), -.15 + k * .15, .35, .3, .1, .1, .1)); g.add(mesh(G.dome, boatMat(c), -.15 + k * .15, .37, .3, .11, .07, .11)); });
+    g.userData = { u:(DOCK_U + u0 + .03) % 1, wait:0, docked:false };
+    g.traverse(o => { if (o.isMesh) o.userData.harbor = true; });
+    scene.add(g); return g;
+  });
+  const _ft = new V3();
+  function placeFerry(g, dt) {
+    const d = g.userData;
+    if (d.wait > 0) d.wait -= dt;
+    else if (dt > 0) {
+      const prev = d.u; d.u = (d.u + dt * .34 / ferryLen) % 1;
+      if (prev < DOCK_U && d.u >= DOCK_U) { d.u = DOCK_U; d.wait = 3.5; addLog("arrive", `渡輪靠岸,${3} 位訪客從${hb.name}上岸`, "f-visit"); }
+    }
+    ferryCurve.getPoint(d.u, g.position); ferryCurve.getTangent(d.u, _ft);
+    g.position.y = WATER_Y + .02 + Math.sin(state.time * 1.6 + d.u * 20) * .02; g.rotation.y = Math.atan2(_ft.x, _ft.z);
   }
 
   kit.build(); smallKit.build();
@@ -1148,7 +1275,8 @@ async function main() {
     const az = Math.PI * (.15 + .7 * ts), el = .35 + Math.sin(ts * Math.PI) * .75;
     const dir = new V3(Math.cos(az) * Math.cos(el), Math.sin(el), .55 * Math.cos(el) + .35).normalize();
     sun.position.copy(center).addScaledVector(dir, 40); sky.material.uniforms.uSunDir.value.copy(dir);
-    glowMat.emissiveIntensity = night * 3.2; poolMat.opacity = night * .55;
+    glowMat.emissiveIntensity = night * 3.2; poolMat.opacity = night * .55; state.night = night;
+    stripMats.forEach(m => m.opacity = night * .95); strips.forEach(m => m.visible = night > .02);
     const hh = Math.floor(m / 60), mm = Math.floor(m % 60);
     $("#clock").textContent = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
     let seg = 0; DATA.dayCycle.forEach((d, k) => { if (m >= d.start) seg = k; });
@@ -1188,8 +1316,8 @@ async function main() {
     if (k >= 1) flight = null;
   }
   // 桌面版右側清單蓋住約 340px,全景時把城市往左挪,讓它落在可見區域中間
-  const overviewTarget = () => { const t = center.clone(); if (!isMobile && !$("#side").hidden) { const dir = new V3(.24, .33, .87).normalize();
-    t.addScaledVector(new V3().crossVectors(dir.clone().negate(), _up).normalize(), 340 / W * overviewDist() * .3); } return t; };
+  const overviewTarget = () => { const t = center.clone().lerp(harbor.tip.clone().setY(center.y), .12); if (!isMobile && !$("#side").hidden) { const dir = new V3(.24, .33, .87).normalize();
+    t.addScaledVector(new V3().crossVectors(dir.clone().negate(), _up).normalize(), 340 / W * overviewDist() * .22); } return t; };
   const overviewPos = () => overviewTarget().add(new V3(.24, .33, .87).normalize().multiplyScalar(overviewDist()));
   function goOverview() { state.tog.bird = false; syncToggles(); controls.minPolarAngle = THREE.MathUtils.degToRad(25); flyTo(overviewPos(), overviewTarget()); }
   function focus(target, offset) {
@@ -1222,10 +1350,20 @@ async function main() {
     cardBody.querySelectorAll("[data-item]").forEach(b => b.addEventListener("click", () => selectItem(b.dataset.item)));
     cardBody.querySelectorAll("[data-island]").forEach(b => b.addEventListener("click", () => selectIsland(+b.dataset.island)));
     cardBody.querySelectorAll("[data-flow]").forEach(b => b.addEventListener("click", () => selectFlow(+b.dataset.flow)));
+    cardBody.querySelectorAll("[data-harbor]").forEach(b => b.addEventListener("click", selectHarbor));
   }
   const flowsOf = s => flows.filter(f => f.A === s || f.B === s);
   const flowChip = f => `<button class="chip" type="button" data-flow="${f.index}" style="--c:${f.B.color}"><i></i>${esc(f.A.name)} → ${esc(f.B.name)} · ${esc(f.cargo)}</button>`;
-  const islandChip = s => `<button class="chip" type="button" data-island="${s.index}" style="--c:${s.color}"><i></i>${s.no} ${esc(s.name)}</button>`;
+  const islandChip = s => s.isHarbor ? `<button class="chip" type="button" data-harbor style="--c:${s.color}"><i></i>⚓ ${esc(s.name)}</button>`
+    : `<button class="chip" type="button" data-island="${s.index}" style="--c:${s.color}"><i></i>${s.no} ${esc(s.name)}</button>`;
+  function harborCard() {
+    const fl = flowsOf(harbor), n = walkers.filter(w => fl.some(f => f.index === w.f)).length;
+    return `<div class="eyebrow">訪客碼頭 · 接在 ${hIsl.no} ${esc(hIsl.name)}</div>
+      <h2>⚓ ${esc(hb.name)}</h2><p>${esc(hb.desc)}</p>${tilesOf(hb)}
+      <ul class="facts">${hb.facts.map(f => `<li>${esc(f)}</li>`).join("")}</ul>
+      <h3>上岸之後</h3><p>${ferries.length} 艘渡輪輪流靠岸;${n} 位訪客沿著 ${fl.length} 條協作線走進島內。</p>
+      <div class="chips">${fl.map(flowChip).join("")}${islandChip(hIsl)}</div>`;
+  }
   function islandCard(s) {
     const cnt = [0, 0, 0]; s.items.forEach(it => cnt[it.stage]++);
     return `<div class="eyebrow">島嶼 · ${s.no} · ${s.items.length} 棟建物</div>
@@ -1295,7 +1433,7 @@ async function main() {
 
   // ---------- 選取 ----------
   function showFlows(list) { const vis = new Set(list.map(f => f.index)); flows.forEach(f => f.tube.visible = state.tog.flows || vis.has(f.index)); $("#legend").hidden = !flows.some(f => f.tube.visible); dirty = true; }
-  function setLabels(selIndex) { islands.forEach(s => { s.label.classList.toggle("sel", s.index === selIndex); s.label.classList.toggle("dim", selIndex != null && s.index !== selIndex); }); }
+  function setLabels(selIndex) { harbor.label?.classList.remove("sel"); islands.forEach(s => { s.label.classList.toggle("sel", s.index === selIndex); s.label.classList.toggle("dim", selIndex != null && s.index !== selIndex); }); }
   function markList(key) { document.querySelectorAll("#sideList [data-key]").forEach(b => b.setAttribute("aria-current", b.dataset.key === key ? "true" : "false")); }
   function selectIsland(i) {
     const s = islands[i]; state.sel = { type:"island", i };
@@ -1319,6 +1457,10 @@ async function main() {
     if (!w.name) { const el = document.createElement("div"); el.className = "bubble"; el.textContent = `正在搬${flows[w.f].cargo}`; w.name = new CSS2DObject(el); w.name.visible = false; scene.add(w.name); }
     openCard(walkerCard(w)); walkerPoint(w); focus(w.pos.clone(), [1.3, 1.9, 2.6]);
   }
+  function selectHarbor() {
+    state.sel = { type:"harbor" }; selectedOwners = new Set(); recolor(); showFlows(flowsOf(harbor)); setLabels(hIsl.index); clearPins();
+    harbor.label.classList.add("sel"); openCard(harborCard()); focus(harbor.root.clone().lerp(harbor.tip, .75), [3.4, 6.6, 7.8]); markList("harbor");
+  }
   function clearSelection() {
     state.sel = null; selectedOwners = new Set(); recolor(); showFlows([]); setLabels(null); clearPins();
     card.hidden = true; markList(null); dirty = true;
@@ -1334,14 +1476,17 @@ async function main() {
     const r = renderer.domElement.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
     ray.setFromCamera(ndc, camera);
     walkerMeshes.body.boundingSphere = null; walkerMeshes.head.boundingSphere = null;
-    const targets = [walkerMeshes.body, walkerMeshes.head, ...flows.filter(f => f.tube.visible).map(f => f.tube), ...kitMeshes, ...islandTops];
+    const targets = [walkerMeshes.body, walkerMeshes.head, ...flows.filter(f => f.tube.visible).map(f => f.tube), ...kitMeshes, ...islandTops, ...ferries];
+    const hit0 = ray.intersectObjects(ferries, true)[0];
+    if (hit0) { const near = ray.intersectObjects(targets.slice(0, -1), false)[0]; if (!near || near.distance > hit0.distance) return selectHarbor(); }
     const hit = ray.intersectObjects(targets, false)[0];
     if (!hit) { clearSelection(); return; }
     const o = hit.object;
     if (o === walkerMeshes.body || o === walkerMeshes.head) return selectWalker(hit.instanceId);
     if (o.userData.flow != null) return selectFlow(o.userData.flow);
     if (o.isInstancedMesh) { const own = o.userData.owners[hit.instanceId];
-      if (own?.type === "item") return selectItem(own.id); if (own?.type === "island") return selectIsland(own.i); return; }
+      if (own?.type === "item") return selectItem(own.id); if (own?.type === "island") return selectIsland(own.i); if (own?.type === "harbor") return selectHarbor(); return; }
+    if (o.userData.harbor) return selectHarbor();
     if (o.userData.island != null) return selectIsland(o.userData.island);
   });
 
@@ -1357,7 +1502,9 @@ async function main() {
           <ol class="list">${its.map(it => `<li><button type="button" data-key="${it.id}" data-item="${it.id}"><span class="n" style="background:${s.color}">${it.k + 1}</span>
             <span>${esc(it.name)}</span><span class="st s${it.stage}">${STAGES[it.stage]}</span></button></li>`).join("")}</ol></details>`;
       }).join("");
-      box.innerHTML = html || `<p class="empty">找不到「${esc(q)}」。試試「P11」「題庫」或「94%」。</p>`;
+      const hbRow = hit(hb.name) || hit(hb.desc) || hit("碼頭 訪客 船") ? `<ol class="list"><li><button type="button" data-key="harbor" data-harbor>
+        <span class="n" style="background:${hb.color}">⚓</span><span>${esc(hb.name)}<small>訪客搭船上岸,親自參與評測</small></span><span class="st s1">開放</span></button></li></ol>` : "";
+      box.innerHTML = (hbRow + html) || `<p class="empty">找不到「${esc(q)}」。試試「P11」「題庫」或「94%」。</p>`;
     } else {
       const fl = flows.filter(f => hit(f.cargo) || hit(f.A.name) || hit(f.B.name) || hit(f.role));
       box.innerHTML = fl.length ? `<ol class="list">${fl.map(f => `<li><button type="button" data-key="f${f.index}" data-flow="${f.index}"><span class="n" style="background:${f.B.color}">${f.index + 1}</span>
@@ -1367,6 +1514,7 @@ async function main() {
     box.querySelectorAll("summary[data-island]").forEach(el => el.addEventListener("click", () => selectIsland(+el.dataset.island)));
     box.querySelectorAll("button[data-item]").forEach(el => el.addEventListener("click", () => selectItem(el.dataset.item)));
     box.querySelectorAll("button[data-flow]").forEach(el => el.addEventListener("click", () => selectFlow(+el.dataset.flow)));
+    box.querySelectorAll("button[data-harbor]").forEach(el => el.addEventListener("click", selectHarbor));
   }
   $("#search").addEventListener("input", renderSide);
   for (const [id, t] of [["#tabTopics", "topics"], ["#tabFlows", "flows"]]) $(id).addEventListener("click", () => {
@@ -1397,7 +1545,8 @@ async function main() {
     const k = b.dataset.tog;
     if (k === "paused") state.paused = !state.paused; else state.tog[k] = !state.tog[k];
     if (k === "flows") { if (state.sel?.type === "flow") showFlows([flows[state.sel.i]]); else if (state.sel?.type === "island") showFlows(flowsOf(islands[state.sel.i]));
-      else if (state.sel?.type === "item") showFlows(flowsOf(itemById[state.sel.id].island)); else showFlows([]); }
+      else if (state.sel?.type === "item") showFlows(flowsOf(itemById[state.sel.id].island));
+      else if (state.sel?.type === "harbor") showFlows(flowsOf(harbor)); else showFlows([]); }
     if (k === "names" && state.tog.names) walkers.forEach(w => { if (!w.name) { const el = document.createElement("div"); el.className = "bubble";
       el.textContent = `正在搬${flows[w.f].cargo}`; w.name = new CSS2DObject(el); w.name.visible = false; scene.add(w.name); } });
     if (k === "bird") { if (state.tog.bird) { controls.minPolarAngle = 0; flyTo(controls.target.clone().add(new V3(.01, 42, 6)), controls.target.clone()); } else goOverview(); }
@@ -1464,7 +1613,7 @@ async function main() {
   camera.position.copy(overviewPos()); controls.target.copy(overviewTarget());
 
   // ---------- 主迴圈 ----------
-  applyDayNight(); poseWalkers();
+  applyDayNight(); poseWalkers(); boats.forEach(placeBoat); ferries.forEach(f => placeFerry(f, 0)); updateBulbs();
   let last = performance.now(), frame = 0, smallVisible = true;
   function loop(now) {
     requestAnimationFrame(loop);
@@ -1475,7 +1624,8 @@ async function main() {
       updateWalkers(dt);
       water.material.uniforms.uTime.value = state.time; lineMats.forEach(m => m.uniforms.uTime.value = state.time);
       clouds.forEach(c => { c.position.x += c.userData.speed * dt; if (c.position.x > center.x + 75) c.position.x = center.x - 75; });
-      boats.forEach((b, i) => { b.position.y = WATER_Y + Math.sin(state.time * 1.3 + i) * .03; b.rotation.z = Math.sin(state.time + i) * .05; });
+      boats.forEach(b => { b.userData.a += b.userData.speed * dt; placeBoat(b); });
+      ferries.forEach(f => placeFerry(f, dt));
       dirty = true;
     }
     if (flight) { stepFlight(now); dirty = true; }
@@ -1483,6 +1633,7 @@ async function main() {
     if (!dirty) return;
     applyDayNight();
     poseWalkers();
+    updateBulbs();
     const near = camera.position.distanceTo(controls.target) < 26;
     if (near !== smallVisible) { smallVisible = near; smallKit.meshes.forEach(m => m.visible = near); }
     renderer.render(scene, camera); labelRenderer.render(scene, camera);
