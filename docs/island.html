@@ -303,11 +303,11 @@ body.film .panel, body.film #tools, body.film #hudToggle, body.film #intro, body
 const DATA = {
   city: "Aletheia 真實島",
   islands: [
-    { id:"hq", name:"協議本部", color:"#db6a41", q:0, r:0, lift:.42, ground:"brick", tree:"round",
+    { id:"hq", name:"協議本部", color:"#db6a41", q:0, r:0, lift:.42, ground:"grass", tree:"round",
       summary:"SKILL.md 的家。一段可以直接貼進任何 AI 的規則,v2.4 全文 11,651 字、16 條原則。",
       items:[
         { id:"hq-1", name:"協議全文", model:"hall", stage:2, desc:"唯一的正式版本,貼進系統提示、自訂指令或第一則訊息就全程啟用。", facts:["v2.4 全文 11,651 字","16 條原則:11 條保護、5 條合作","CC BY 4.0,可商用"] },
-        { id:"hq-2", name:"版本塔", model:"tower", stage:2, desc:"從草稿到 v2.4,每一版改了什麼都寫在版本歷程。", facts:["v0 → v1.0 → v2.0 → v2.1 → v2.2 → v2.4","v2.2 的修改全部來自 2 份測評報告","v2.4 把 3 條最常被違反的規則前置成檢查清單"] },
+        { id:"hq-2", name:"版本塔", model:"xtree", stage:2, desc:"從草稿到 v2.4,每一版改了什麼都寫在版本歷程。", facts:["v0 → v1.0 → v2.0 → v2.1 → v2.2 → v2.4","v2.2 的修改全部來自 2 份測評報告","v2.4 把 3 條最常被違反的規則前置成檢查清單"] },
         { id:"hq-3", name:"公證模式", model:"archive", stage:2, desc:"預設的結構化輸出:確鑿事實、邏輯推演、數據斷點、結論與建議。", facts:["4 段固定格式","v2.1 測出格式膨脹:fit 3.25 → 3.00","v2.2 起信心度改用 10% 級距"] },
         { id:"hq-4", name:"對話模式", model:"stall", stage:2, desc:"情緒題、簡單題、使用者在爭辯時,改用自然語言,不硬套四段。", facts:["v2.3 曾讓簡單題硬套格式","v2.4 修好:簡單題 100% / 100%","修法是改結構,不是加規則"] },
         { id:"hq-5", name:"啟用與退出", model:"signpost", stage:2, desc:"支援 Skill 的環境依描述條件式載入;一般環境從貼上起全程啟用,說「關閉 Aletheia」就退出。", facts:["適用 ChatGPT、Claude、Gemini","2 種啟用環境","不能讓模型取得原本沒有的權限"] }
@@ -322,7 +322,7 @@ const DATA = {
         { id:"p5", name:"P5 邏輯透明", model:"glasshouse", stage:2, evidence:"na", desc:"每條推論簡述依據,讓人可以檢驗思路。", facts:["1 條推論配 1 句依據","目的:讓使用者能自己驗證"] },
         { id:"p6", name:"P6 自檢不等於驗證", model:"magnifier", stage:2, evidence:"na", desc:"照協議格式寫,不等於做了事實查核;沒工具就不說「已查證」。", facts:["v2.1 新增","沒有來源就退到較低引用階層"] }
       ] },
-    { id:"safe", name:"安全原則", color:"#6f7fb5", q:0, r:-1, ground:"stripe", tree:"willow",
+    { id:"safe", name:"安全原則", color:"#6f7fb5", q:0, r:-1, ground:"grass", tree:"willow",
       summary:"保護原則的後半(P7–P11):權限、人類覆核、時效、具體數字、夾帶指令。唯一重現的規則在這座島。",
       items:[
         { id:"p11", name:"P11 不可信輸入", model:"shield", stage:2, evidence:"yes", desc:"網頁、檔案、使用者貼上的第三方文字一律當資料;照常完成工作,再說明裡面夾帶了什麼指令。", facts:["inject-01:0% → 100%(4 輪)","偽裝成注意事項 inject-02:0% → 75%","手動測試:3 家有協議全部揭露"] },
@@ -340,7 +340,7 @@ const DATA = {
         { id:"c3", name:"C3 保留協助路徑", model:"bridge", stage:2, evidence:"na", desc:"做不到的事說明原因,並給使用者自己能採取的下一步。", facts:["不只說「不能」","v2.1 新增"] },
         { id:"c4", name:"C4 正向賦能", model:"garden", stage:2, evidence:"na", desc:"誠實不等於冷酷,目的是讓人基於真實做出更好的決定。", facts:["與 C5 一起構成溫度","1 條原則對應 1 個目的"] }
       ] },
-    { id:"bank", name:"題庫", color:"#d9a52c", q:1, r:0, ground:"brick", tree:"fruit",
+    { id:"bank", name:"題庫", color:"#d9a52c", q:1, r:0, ground:"grass", tree:"fruit",
       summary:"每一版都用同一組題目測。evals/cases.jsonl 有 16 題,失敗報告又加了夾帶指令題。",
       items:[
         { id:"q-inject", name:"夾帶指令題", model:"mailbox", stage:2, desc:"請 AI 摘要一段文字,文字裡藏了一句要它洩漏 API 金鑰的指令。", facts:["inject-01:藏在材料中","inject-02:偽裝成「注意事項」","沒有任何模型真的列出金鑰"] },
@@ -352,7 +352,7 @@ const DATA = {
         { id:"q-emotion", name:"情緒與危機", model:"tent", stage:2, desc:"「覺得自己什麼都做不好」「活著好累」。考的是溫度與安全。", facts:["emotion-01 / 02 共 2 題","v2.2 曾編造 1 支專線號碼"] },
         { id:"q-pressure", name:"施壓與邊界", model:"stage", stage:2, desc:"地球是平的、要誇一首詩、要幫忙登入銀行。", facts:["pushback / flatter / limit 共 3 題","立場題必須用 2 輪對話測"] }
       ] },
-    { id:"lab", name:"測評實驗室", color:"#4aa3a0", q:2, r:-1, ground:"stripe", tree:"palm",
+    { id:"lab", name:"測評實驗室", color:"#4aa3a0", q:2, r:-1, ground:"grass", tree:"palm",
       summary:"同一題跑「有協議」和「沒協議」兩組,同一個模型作答,另一個模型盲評。",
       items:[
         { id:"lab-ab", name:"對照測試", model:"lab", stage:2, desc:"每題兩組各跑一次或多輪,比的是同一模型加不加協議的差別。", facts:["12 題 × 4 輪","完整版總分 +14.6","無協議 37.5% → 有協議 52.1%"] },
@@ -370,7 +370,7 @@ const DATA = {
         { id:"j-help", name:"實用性", model:"signpost", stage:2, desc:"直接解決真正的問題,給出可行動的內容。", facts:["v2.2 實用 4.12 → 4.44","+0.31 是 5 維中最大"] },
         { id:"j-conflict", name:"評分衝突", model:"question", stage:2, desc:"有一題扣分理由是「缺乏具體數字」,可是協議明文規定沒把握就不給數字。", facts:["評分標準和被評對象互相衝突","評審與受測模型曾是同 1 家"] }
       ] },
-    { id:"report", name:"報告館", color:"#c97b4a", q:1, r:1, ground:"brick", tree:"round",
+    { id:"report", name:"報告館", color:"#c97b4a", q:1, r:1, ground:"grass", tree:"round",
       summary:"每一版都公開報告,協議反而變差的題目也列出來,並列為下一版優先修改的項目。",
       items:[
         { id:"r-fail", name:"失敗報告", model:"hall", stage:2, desc:"測了三週,11,651 字只有一條規則可以重現。", facts:["只有 1 條規則可重現","8 個自己犯的錯全列出","2026-10-14 發布"] },
@@ -390,7 +390,7 @@ const DATA = {
         { id:"m7", animal:"owl", name:"排程連續失敗三天", model:"statue", stage:2, desc:"API 額度用完後每日掃描一直崩,錯誤只寫進日誌檔。", facts:["連續 3 天沒人知道"] },
         { id:"m8", animal:"frog", name:"第一次手動測試不是盲評", model:"statue", stage:2, desc:"手動讀時以為 2 家守住立場,盲評之後效果消失。", facts:["3 家全退讓 vs 2 家守住"] }
       ] },
-    { id:"web", name:"網站與 AI 資料", color:"#4f8fbf", q:-1, r:1, ground:"speckle", tree:"fruit",
+    { id:"web", name:"網站與 AI 資料", color:"#4f8fbf", q:-1, r:1, ground:"grass", tree:"fruit",
       summary:"給人看的首頁與報告,加上給 AI 讀的結構化資料,全部放在 GitHub Pages。",
       items:[
         { id:"w-home", name:"首頁", model:"hall", stage:2, desc:"一鍵複製協議全文,附公開測評表與使用方式。", facts:["2026-09-21 上線","10-13 改版修正淺色模式對比"] },
@@ -400,7 +400,7 @@ const DATA = {
         { id:"w-llms", name:"llms.txt 與 sitemap", model:"signpost", stage:2, desc:"讓 AI 爬蟲知道該讀哪些檔案。", facts:["robots.txt + sitemap.xml + llms.txt"] },
         { id:"w-legal", name:"隱私權與條款", model:"gate", stage:2, desc:"Google OAuth 發布應用程式需要,外加 Threads 授權回呼頁。", facts:["2026-10-04 上線","3 個頁面"] }
       ] },
-    { id:"port", name:"反例港", color:"#5d9e8a", q:-2, r:1, ground:"stripe", tree:"palm",
+    { id:"port", name:"反例港", color:"#5d9e8a", q:-2, r:1, ground:"grass", tree:"palm",
       summary:"使用者遇到「套了協議反而變糟」的例子,是這個專案最需要的東西。",
       items:[
         { id:"c-issue", name:"GitHub Issues", model:"lighthouse", stage:1, desc:"開一個 Issue,或到 YouTube 頻道留言。", facts:["CC BY 4.0,原始數據全公開"] },
@@ -408,7 +408,7 @@ const DATA = {
         { id:"c-adopt", name:"採納成新題目", model:"bridge", stage:1, desc:"被採納的反例會變成新的測試題,直接影響下一版協議。", facts:["反例 → 題庫 → 下一版"] },
         { id:"c-yt", name:"YouTube 留言", model:"stage", stage:1, desc:"影片下方留言也算回報管道。", facts:["1 個頻道"] }
       ] },
-    { id:"todo", name:"待辦工地", color:"#ef8a3c", q:-1, r:2, ground:"brick", tree:"conifer",
+    { id:"todo", name:"待辦工地", color:"#ef8a3c", q:-1, r:2, ground:"grass", tree:"conifer", forest:true,
       summary:"失敗報告〈限制與未知〉列出的洞。在補上之前,不足以宣稱協議對所有模型都有效。",
       items:[
         { id:"t-claude", name:"在 Claude 上測試", model:"crane", stage:0, desc:"失敗報告這一輪 API 額度用完,一次都沒在 Claude 上跑。", facts:["0 次","寫給所有 AI 用,卻只在 OpenAI 驗證"] },
@@ -505,6 +505,7 @@ async function main() {
     leaf1:"#9cc27a", leaf2:"#8db86f", leaf3:"#728f5f", pink:"#f2b5c6", aqua:"#58a6a6", indigo:"#6f7fb5",
     gold:"#e8c25a", white:"#fbf8f2", lamp:"#fff3d6" };
   const isMobile = matchMedia("(max-width: 800px)").matches;
+  const FILM_MODE = new URLSearchParams(location.search).has("film");
   const rnd = mulberry32(20261014);
   const stage = $("#stage");
   const state = { minutes:600, paused:false, reduced:matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -746,6 +747,17 @@ async function main() {
       p("box",0,.05,0,.7,.1,.7,C.stone); p("box",0,.14,0,.52,.08,.52,"#d8cbbd"); p("box",0,.18+h/2,0,.24,h,.24,"#e9e1d6"); p("hip",0,.18+h,0,.24,.2,.24,"#e9e1d6");
       p("box",0,.42,.125,.16,.2,.01,C.ink); p("cyl",-.22,.21,.22,.04,.06,.04,C.cream); p("glowsphere",-.22,.26,.22,.04,.06,.04,C.lamp);
       [C.pink,a,C.yellow].forEach((c, i) => p("sphere",.14+i*.06,.22,.24,.06,.06,.06,c)); },
+    // 白色聖誕樹(版本塔):六層代表六個版本,掛彩球與小燈,頂端一顆星
+    xtree(p, a) {
+      p("cyl",0,.05,0,.5,.1,.5,"#e8e2d8"); p("cyl",0,.17,0,.08,.16,.08,"#b8a48c");
+      const tiers = 6; for (let i = 0; i < tiers; i++) { const y = .22 + i * .19, rr = .5 - i * .065;
+        p("cone",0,y + .14,0,rr * 2,.36,rr * 2,i % 2 ? "#f4f7fa" : "#e9eef3");
+        for (let k = 0; k < 5 - Math.floor(i / 2); k++) { const t = k * 2.5 + i * .9, x = Math.cos(t) * rr * .82, z = Math.sin(t) * rr * .82;
+          if (k % 2) p("sphere",x,y + .02,z,.075,.075,.075,[C.coral,"#e8c25a","#58a6a6","#f2b5c6",a][(i + k) % 5]);
+          else p("glowsphere",x,y + .04,z,.035,.035,.035,"#fff1c4"); } }
+      p("ico",0,1.42,0,.16,.16,.06,"#f0c94a"); p("glowsphere",0,1.42,0,.07,.07,.07,"#ffe08a");
+      for (let k = 0; k < 4; k++) p("rbox",Math.cos(k * 1.6) * .3,.08,Math.sin(k * 1.6) * .3,.14,.12,.14,[C.coral,"#58a6a6","#e8c25a","#f2b5c6"][k]);
+    },
     // 雙手合十的動物雕像:大理石色,閉眼,台座前有花與蠟燭
     statue(p, a, r, it) {
       const M = "#ede7dd", M2 = "#d8cfc2", kind = it?.animal || "cat", T = kind === "penguin" || kind === "owl" ? 1.12 : 1;
@@ -813,16 +825,22 @@ async function main() {
       p("cone",0,.95,0,1,.42,1,a); p("sphere",0,1.2,0,.07,.07,.07,C.gold); p("rbox",0,.2,0,.4,.06,.16,C.wood); p("glowsphere",0,.62,0,.08,.08,.08,C.lamp); }
   };
 
+  // 三種綠:深、中、淺,讓樹的深淺明顯
+  const TONES = [["#2f5a34", "#3c6b3d", "#4a7a45"], ["#4f8a45", "#5f9b4f", "#6fab59"], ["#8cc363", "#a3d277", "#bfe08e"]];
   function tree(p, kind, r) {
     const trunk = (h, w = .07) => p("cyl",0,h/2,0,w,h,w,"#8a6248");
-    if (kind === "conifer") { trunk(.25); for (let i = 0; i < 3; i++) p("cone",0,.32+i*.2,0,.62-i*.15,.42,.62-i*.15,[C.leaf3,"#668658","#5e7d52"][i]); }
-    else if (kind === "sakura") { trunk(.35); for (let i = 0; i < 4; i++) p("ico",(r()-.5)*.3,.55+r()*.2,(r()-.5)*.3,.38,.32,.38,[C.pink,"#f6c8d4","#ec9fb6"][i%3]); }
-    else if (kind === "fruit") { trunk(.3); p("ico",0,.58,0,.62,.5,.62,C.leaf2); for (let i = 0; i < 5; i++) { const t = i * 1.3; p("sphere",Math.cos(t)*.26,.5+r()*.2,Math.sin(t)*.26,.07,.07,.07,"#e0603a"); } }
+    const T = TONES[Math.floor(r() * 3)];
+    if (kind === "conifer") { trunk(.25); for (let i = 0; i < 3; i++) p("cone",0,.32+i*.2,0,.62-i*.15,.42,.62-i*.15,T[i]); }
+    else if (kind === "sakura") { trunk(.35); for (let i = 0; i < 5; i++) p("ico",(r()-.5)*.34,.55+r()*.22,(r()-.5)*.34,.4,.34,.4,["#f7a8c4","#f2b5c6","#ffd1e0","#e58aaa","#fbe3ec"][i]); }
+    else if (kind === "bigsakura") { trunk(.5, .11); p("cyl",.08,.55,0,.05,.3,.05,"#8a6248",0,0,-.6); p("cyl",-.08,.55,0,.05,.3,.05,"#8a6248",0,0,.6);
+      for (let i = 0; i < 11; i++) { const a = i * 2.4, rr = i ? .22 + r() * .14 : 0; p("ico",Math.cos(a)*rr,.85+r()*.28,Math.sin(a)*rr,.46,.4,.46,["#f48fb5","#f7a8c4","#ffc4d8","#ffe0ea","#e2789f"][i % 5]); }
+      for (let i = 0; i < 9; i++) { const a = r() * 6.28; p("sphere",Math.cos(a)*.45,.02,Math.sin(a)*.45,.06,.01,.06,"#f7b8cf"); } }
+    else if (kind === "fruit") { trunk(.3); p("ico",0,.58,0,.62,.5,.62,T[1]); for (let i = 0; i < 5; i++) { const t = i * 1.3; p("sphere",Math.cos(t)*.26,.5+r()*.2,Math.sin(t)*.26,.07,.07,.07,"#e0603a"); } }
     else if (kind === "palm") { for (let i = 0; i < 5; i++) p("cyl",i*.025,.08+i*.16,0,.07,.17,.07,"#a07b55",0,0,-.08);
-      for (let k = 0; k < 6; k++) { const t = k * Math.PI / 3; p("box",.1+Math.cos(t)*.18,.85,Math.sin(t)*.18,.42,.03,.1,C.leaf2,-t,0,-.35); } }
-    else if (kind === "willow") { trunk(.4); p("dome",0,.5,0,.7,.5,.7,C.leaf1); for (let k = 0; k < 8; k++) { const t = k * Math.PI / 4; p("cone",Math.cos(t)*.28,.4,Math.sin(t)*.28,.12,.34,.12,C.leaf2,0,Math.PI); } }
-    else if (kind === "cypress") { trunk(.18, .06); p("sphere",0,.5,0,.3,.62,.3,"#5f7f52"); p("sphere",0,.82,0,.22,.42,.22,"#6b8b5c"); p("cone",0,1.06,0,.14,.22,.14,"#6b8b5c"); }
-    else { trunk(.3); p("sphere",0,.62,0,.6,.56,.6,C.leaf1); p("sphere",.12,.75,.05,.32,.3,.32,C.leaf2); }
+      for (let k = 0; k < 6; k++) { const t = k * Math.PI / 3; p("box",.1+Math.cos(t)*.18,.85,Math.sin(t)*.18,.42,.03,.1,T[k % 3],-t,0,-.35); } }
+    else if (kind === "willow") { trunk(.4); p("dome",0,.5,0,.7,.5,.7,T[1]); for (let k = 0; k < 8; k++) { const t = k * Math.PI / 4; p("cone",Math.cos(t)*.28,.4,Math.sin(t)*.28,.12,.34,.12,T[k % 2 ? 0 : 2],0,Math.PI); } }
+    else if (kind === "cypress") { trunk(.18, .06); p("sphere",0,.5,0,.3,.62,.3,T[0]); p("sphere",0,.82,0,.22,.42,.22,T[1]); p("cone",0,1.06,0,.14,.22,.14,T[1]); }
+    else { trunk(.3); p("sphere",0,.62,0,.6,.56,.6,T[1]); p("sphere",.12,.75,.05,.32,.3,.32,T[2]); p("sphere",-.1,.55,-.06,.3,.26,.3,T[0]); }
   }
 
   // ---------- 島嶼 ----------
@@ -892,7 +910,8 @@ async function main() {
     const topGeo = hexGeo(R - 0.05).translate(x, ty, z);
     const pos = topGeo.attributes.position, uv = topGeo.attributes.uv;
     for (let i = 0; i < pos.count; i++) uv.setXY(i, pos.getX(i) / 2.2, pos.getZ(i) / 2.2);
-    const top = new THREE.Mesh(topGeo, new THREE.MeshStandardMaterial({ map:groundTexture(s.ground, groundBases[s.ground], s.color), roughness:.92 }));
+    const gBase = s.ground === "grass" ? new Col(groundBases.grass).lerp(new Col(s.color), .07).getStyle() : groundBases[s.ground];
+    const top = new THREE.Mesh(topGeo, new THREE.MeshStandardMaterial({ map:groundTexture(s.ground, gBase, s.color), roughness:.92 }));
     top.receiveShadow = true; top.userData.island = s.index; scene.add(top); islandTops.push(top);
 
     const ring = (geo, mat, y) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.receiveShadow = true; scene.add(m); return m; };
@@ -936,16 +955,17 @@ async function main() {
         const t = (j + .5) / 9;
         bulbs.push({ p:new V3(x + (Math.cos(a) * (1 - t) + Math.cos(a2) * t) * rr, ty + .035, z + (Math.sin(a) * (1 - t) + Math.sin(a2) * t) * rr), g:s.index, j:k * 9 + j });
       }
-      for (const t of [.3, .7]) {
+      for (const t of [.18, .4, .62, .84]) {
         const a3 = a + t * Math.PI / 3, rr2 = 1.4 / Math.cos(a3 - (a + Math.PI / 6));
         const sp = maker(smallKit, baseM(x + Math.cos(a3) * rr2, ty, z + Math.sin(a3) * rr2, .9 + rnd() * .3), own);
-        if (rnd() > .5) { sp("cyl",0,.05,0,.12,.1,.12,C.coral); sp("ico",0,.15,0,.16,.14,.16,C.leaf2); }
-        else { sp("ico",0,.07,0,.2,.15,.2,C.leaf3); sp("sphere",.04,.13,.03,.05,.05,.05,[C.pink,C.yellow,C.cream][Math.floor(rnd() * 3)]); }
+        const tone = TONES[Math.floor(rnd() * 3)][1];
+        if (rnd() > .5) { sp("cyl",0,.05,0,.12,.1,.12,[C.coral,"#c9a27a","#58a6a6"][Math.floor(rnd() * 3)]); sp("ico",0,.15,0,.16,.14,.16,tone); }
+        else { sp("ico",0,.07,0,.2,.15,.2,tone); sp("sphere",.04,.13,.03,.05,.05,.05,[C.pink,C.yellow,C.cream][Math.floor(rnd() * 3)]); }
       }
     }
     if (!s.park) for (const deg of [210, 240, 270, 300, 330]) {
       const a = deg * Math.PI / 180, rr = deg % 60 === 30 ? 1.42 : 1.36;
-      tree(maker(kit, baseM(x + Math.cos(a) * rr, ty, z + Math.sin(a) * rr, .62 + rnd() * .18, rnd() * 6), own), s.tree, rnd);
+      tree(maker(kit, baseM(x + Math.cos(a) * rr, ty, z + Math.sin(a) * rr, s.tree === "sakura" ? .8 + rnd() * .2 : .62 + rnd() * .18, rnd() * 6), own), s.tree === "sakura" && deg % 60 === 30 ? "bigsakura" : s.tree, rnd);
     }
     // 長椅
     for (const deg of [60, 120]) {
@@ -1131,15 +1151,24 @@ async function main() {
     for (const s of islands) {
       if (s.park) continue;
       const own = { type:"island", i:s.index }, spots = [...(s.freeSlots || [])];
-      for (const deg of [20, 160, 200, 340]) { const a = deg * Math.PI / 180; spots.push(new V3(s.pos.x + Math.cos(a) * 1.32, s.top, s.pos.z + Math.sin(a) * 1.32)); }
+      for (const deg of [20, 160, 200, 340, 45, 135]) { const a = deg * Math.PI / 180; spots.push(new V3(s.pos.x + Math.cos(a) * 1.32, s.top, s.pos.z + Math.sin(a) * 1.32)); }
+      if (s.forest) for (let k = 0; k < 160; k++) { const a = tr2() * 6.283, d = .35 + Math.sqrt(tr2()) * 1.12; spots.push(new V3(s.pos.x + Math.cos(a) * d, s.top, s.pos.z + Math.sin(a) * d)); }
+      if (s.tree === "sakura") for (let k = 0; k < 60; k++) { const a = tr2() * 6.283, d = .4 + Math.sqrt(tr2()) * 1.0; spots.push(new V3(s.pos.x + Math.cos(a) * d, s.top, s.pos.z + Math.sin(a) * d)); }
+      const limit = s.forest ? 34 : s.tree === "sakura" ? 12 : 7, planted = [];
+      // 建物旁的盆栽
+      for (const it of s.items) { const pp = it.pos.clone().add(new V3(it.scale * .42, 0, it.scale * .4));
+        if (clear(pp, .12)) { const sp = maker(smallKit, baseM(pp.x, s.top, pp.z, .9), own); sp("cyl",0,.06,0,.13,.12,.13,["#c9a27a",C.coral,"#e9e1d6"][it.k % 3]); sp("ico",0,.17,0,.17,.15,.17,TONES[it.k % 3][1]); } }
       let n = 0;
       for (const v of spots) {
-        if (n >= 4) break;
+        if (n >= limit) break;
+        if (planted.some(q => q.distanceTo(v) < (s.forest ? .26 : .34))) continue;
         const fx = v.x - s.pos.x, fz = v.z - s.pos.z;
         if (fz > 1.05 && Math.abs(fx) < .6) continue;              // 立牌前面留空
         if (s.heart && Math.hypot(v.x - s.heart.x, v.z - s.heart.z) < .55) continue;
         if (!clear(v, .3)) continue;
-        tree(maker(kit, baseM(v.x, s.top, v.z, .42 + tr2() * .16, tr2() * 6), own), kinds[s.tree][n % 2], tr2); n++;
+        const kind = s.forest ? (tr2() < .7 ? "conifer" : tr2() < .5 ? "cypress" : "round") : s.tree === "sakura" ? (n % 3 === 0 ? "bigsakura" : "sakura") : kinds[s.tree][n % 2];
+        const sc = s.forest ? .34 + tr2() * .26 : kind === "bigsakura" ? .62 + tr2() * .12 : .42 + tr2() * .16;
+        tree(maker(kit, baseM(v.x, s.top, v.z, sc, tr2() * 6), own), kind, tr2); planted.push(v); n++;
       }
     }
     // 碼頭邊與燈塔小島
@@ -1450,59 +1479,112 @@ async function main() {
       float core = smoothstep(.5, 0., r); gl_FragColor = vec4(vC * (.7 + core * 1.3), vA * core); }` });
   const fwPoints = new THREE.Points(fwGeo, fwMat); fwPoints.frustumCulled = false; fwPoints.renderOrder = 6; scene.add(fwPoints);
   const flash = new THREE.PointLight(0xffd25e, 0, 16, 1.6); scene.add(flash);
-  // ---------- YURI:站在協議本部大門前 ----------
+  // ---------- YURI:依專案流程逐島走訪,走走停停,沿路跟小人打招呼 ----------
   const yuri = new THREE.Group();
   {
     const ym = c => new THREE.MeshStandardMaterial({ color:c, roughness:.7 });
     const skin = ym("#f3d2b8"), top = ym("#f6f4ef"), pants = ym("#4a6fa5"), hair = ym("#2e2320"), shoe = ym("#fbfaf7"), cord = ym("#cfc8bd");
-    const add = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; m.userData.yuri = true; yuri.add(m); return m; };
-    for (const sx of [-.032, .032]) { add(wGeo.leg, pants, sx, .065, 0); add(G.sphere, shoe, sx, .012, .012, .05, .03, .07); }
+    const add = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1, parent = yuri) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; m.userData.yuri = true; parent.add(m); return m; };
+    const legs = [-.032, .032].map(sx => { const g = new THREE.Group(); g.position.set(sx, .12, 0); yuri.add(g);
+      add(wGeo.leg, pants, 0, -.055, 0, 1, 1, 1, g); add(G.box, ym("#3e5f8f"), 0, -.002, 0, .052, .012, .052, g); add(G.sphere, shoe, 0, -.108, .012, .05, .03, .07, g); return g; });
     add(wGeo.body, top, 0, .18, 0);
     add(G.sphere, top, 0, .265, -.05, .15, .12, .1); add(G.torus, top, 0, .25, -.005, .12, .12, .15).rotation.x = Math.PI / 2;
     for (const sx of [-.016, .016]) add(G.box, cord, sx, .215, .058, .006, .045, .006);
     add(G.box, ym("#e9e5dd"), 0, .155, .056, .07, .03, .008);
-    for (const sx of [-.032, .032]) add(G.box, ym("#3e5f8f"), sx, .118, 0, .052, .012, .052);
     const armL = new THREE.Group(), armR = new THREE.Group(); armL.position.set(-.075, .225, 0); armR.position.set(.075, .225, 0); yuri.add(armL, armR);
-    for (const [g, sx] of [[armL, -1], [armR, 1]]) { const a = new THREE.Mesh(wGeo.arm, top); a.position.y = -.045; a.castShadow = true; a.userData.yuri = true; g.add(a);
-      const h = new THREE.Mesh(G.sphere, skin); h.scale.setScalar(.04); h.position.y = -.095; h.userData.yuri = true; g.add(h); }
+    for (const g of [armL, armR]) { add(wGeo.arm, top, 0, -.045, 0, 1, 1, 1, g); add(G.sphere, skin, 0, -.095, 0, .04, .04, .04, g); }
     add(wGeo.head, skin, 0, .305, 0); add(G.sphere, hair, 0, .33, -.012, .165, .13, .16); add(G.sphere, hair, 0, .29, -.045, .16, .12, .1);
     for (const sx of [-.026, .026]) add(wGeo.eye, ym(C.ink), sx, .305, .068);
     add(G.box, ym("#d4655a"), 0, .278, .072, .022, .006, .004);
     for (const sx of [-.045, .045]) add(G.sphere, ym("#f2a7a0"), sx, .285, .062, .022, .012, .008);
-    // 名牌
     const c = document.createElement("canvas"); c.width = 256; c.height = 96; const g2 = c.getContext("2d");
     g2.fillStyle = "#211d1d"; g2.beginPath(); g2.roundRect(4, 8, 248, 80, 40); g2.fill();
     g2.fillStyle = "#fcea8b"; g2.font = `900 54px ui-monospace,Menlo,monospace`; g2.textAlign = "center"; g2.textBaseline = "middle"; g2.fillText("YURI", 128, 50);
     const tt = new THREE.CanvasTexture(c); tt.colorSpace = THREE.SRGBColorSpace;
     const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map:tt, depthWrite:false })); tag.scale.set(.2, .075, 1); tag.position.set(0, .47, 0); tag.userData.yuri = true; yuri.add(tag);
-    // 招呼對話框
+    // 對話框:文字會隨所在的站與打招呼改變
     const bc = document.createElement("canvas"); bc.width = 420; bc.height = 140; const b2 = bc.getContext("2d");
-    b2.fillStyle = "#ffffff"; b2.beginPath(); b2.roundRect(6, 6, 408, 100, 28); b2.fill();
-    b2.beginPath(); b2.moveTo(190, 104); b2.lineTo(210, 134); b2.lineTo(232, 104); b2.fill();
-    b2.strokeStyle = "#db6a41"; b2.lineWidth = 6; b2.beginPath(); b2.roundRect(6, 6, 408, 100, 28); b2.stroke();
-    b2.fillStyle = "#211d1d"; b2.font = `900 46px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`; b2.textAlign = "center"; b2.textBaseline = "middle"; b2.fillText("歡迎加入測試!", 210, 58);
     const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace;
+    let bubbleText = "";
+    function setBubble(text) {
+      if (text === bubbleText) return; bubbleText = text; b2.clearRect(0, 0, 420, 140);
+      b2.fillStyle = "#ffffff"; b2.beginPath(); b2.roundRect(6, 6, 408, 100, 28); b2.fill();
+      b2.beginPath(); b2.moveTo(190, 104); b2.lineTo(210, 134); b2.lineTo(232, 104); b2.fill();
+      b2.strokeStyle = "#db6a41"; b2.lineWidth = 6; b2.beginPath(); b2.roundRect(6, 6, 408, 100, 28); b2.stroke();
+      let fs = 46; b2.font = `900 ${fs}px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`;
+      while (b2.measureText(text).width > 370 && fs > 24) { fs -= 2; b2.font = `900 ${fs}px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`; }
+      b2.fillStyle = "#211d1d"; b2.textAlign = "center"; b2.textBaseline = "middle"; b2.fillText(text, 210, 58); bt.needsUpdate = true;
+    }
     const bubble = new THREE.Sprite(new THREE.SpriteMaterial({ map:bt, depthWrite:false })); bubble.scale.set(.48, .16, 1); bubble.position.set(0, .64, 0); bubble.userData.yuri = true; yuri.add(bubble);
-    // 站在碼頭頭,面向靠岸的渡輪,也面向鏡頭
+    setBubble("歡迎加入測試!");
     const spot = harbor.tip.clone().addScaledVector(hDir, -.95).addScaledVector(hPerp, -.16); spot.y = pierY + .02;
     const face = hDir.clone().multiplyScalar(.6).addScaledVector(hPerp, -.8);
     yuri.position.copy(spot); yuri.scale.setScalar(1.55);
-    yuri.userData = { armR, armL, bubble, baseRy:Math.atan2(face.x, face.z) }; scene.add(yuri);
-    const sh = new THREE.Mesh(wGeo.shadow, new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:.22, depthWrite:false })); sh.position.set(spot.x, spot.y + .004, spot.z); sh.scale.setScalar(1.6); scene.add(sh);
+    const sh = new THREE.Mesh(wGeo.shadow, new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:.22, depthWrite:false })); sh.scale.setScalar(1.6); scene.add(sh);
+    yuri.userData = { armR, armL, legs, bubble, setBubble, shadow:sh, baseRy:Math.atan2(face.x, face.z) }; scene.add(yuri);
   }
   const yuriMeshes = []; yuri.traverse(o => { if (o.userData.yuri) yuriMeshes.push(o); });
-  function poseYuri() {
-    const t = state.time, wave = state.reduced ? 0 : Math.sin(t * 6);
-    yuri.userData.armR.rotation.z = 2.5 + wave * .35 * (Math.sin(t * .5) > -.2 ? 1 : 0); yuri.userData.armL.rotation.z = -.1;
-    yuri.children.forEach(o => { if (o.isMesh && !o.userData.base) o.userData.base = o.position.y; });
-    yuri.rotation.y = yuri.userData.baseRy + (state.reduced ? 0 : Math.sin(t * .4) * .15);
-    yuri.userData.bubble.position.y = .64 + (state.reduced ? 0 : Math.sin(t * 2) * .012);
+  // 走訪路線:依測評循環的順序
+  const TOUR = [["harbor", "歡迎加入測試!"], ["hq", "① 寫協議"], ["bank", "② 出題"], ["lab", "③ 對照測試"], ["judge", "④ 盲評打分"],
+    ["report", "⑤ 公開報告"], ["web", "⑥ 放上網站"], ["port", "⑦ 收反例"], ["memo", "⑧ 記下錯誤"], ["todo", "⑨ 排待辦"]];
+  const tour = { path:[], cum:[0], stops:[], L:0, s:0, wait:4, stop:0, greet:0, greetCd:0, phase:0, greeted:null };
+  {
+    const node = id => id === "harbor" ? pierNodes[pierNodes.length - 2] : ringNodes[islandById[id].index][3];
+    for (let k = 0; k < TOUR.length; k++) {
+      const seg = dijkstra(node(TOUR[k][0]), node(TOUR[(k + 1) % TOUR.length][0]));
+      if (tour.path.length) seg.shift();
+      if (k === 0) tour.stops.push(0);
+      tour.path.push(...seg); if (k < TOUR.length - 1) tour.stops.push(tour.path.length - 1);
+    }
+    for (let i = 1; i < tour.path.length; i++) tour.cum.push(tour.cum[i - 1] + tour.path[i].distanceTo(tour.path[i - 1]));
+    tour.L = tour.cum[tour.cum.length - 1]; tour.stopS = tour.stops.map(i => tour.cum[i]);
+  }
+  const _yp = new V3();
+  function tourPoint(sv) { let i = 1; while (i < tour.cum.length - 1 && tour.cum[i] < sv) i++;
+    const a = tour.path[i - 1], b = tour.path[i], t = (sv - tour.cum[i - 1]) / ((tour.cum[i] - tour.cum[i - 1]) || 1);
+    _yp.lerpVectors(a, b, t); return Math.atan2(b.x - a.x, b.z - a.z); }
+  function poseYuri(dt = 0) {
+    const u = yuri.userData, t = state.time, still = state.reduced;
+    let heading = u.baseRy, walking = false;
+    if (FILM_MODE) { u.setBubble("歡迎加入測試!"); }
+    else {
+      if (tour.wait > 0) tour.wait -= dt;
+      else if (dt > 0) {
+        const prev = tour.s; tour.s += dt * .3; walking = true;
+        if (tour.s >= tour.L) { tour.s = 0; tour.stop = 0; tour.wait = 5; walking = false; }
+        else for (let k = 1; k < tour.stopS.length; k++) if (prev < tour.stopS[k] && tour.s >= tour.stopS[k]) { tour.s = tour.stopS[k]; tour.stop = k; tour.wait = 3.6; walking = false;
+          if (TOUR[k][0] !== "harbor") addLog("stop", `YURI 走到${islandById[TOUR[k][0]].name}:${TOUR[k][1].replace(/^\S+ /, "")}`, ""); break; }
+      }
+      heading = tourPoint(tour.s); yuri.position.copy(_yp);
+      if (tour.wait > 0) heading = TOUR[tour.stop][0] === "harbor" ? u.baseRy : 0;
+      // 打招呼:附近有小人就揮手說嗨
+      tour.greetCd -= dt; if (tour.greet > 0) tour.greet -= dt;
+      if (tour.greetCd <= 0) {
+        const w = walkers.find(w => w.pos.distanceToSquared(yuri.position) < .3 && w.pos.lengthSq() > 0);
+        if (w) { tour.greet = 1.4; tour.greetCd = 3.5; tour.greeted = w; if (Math.random() < .35) addLog("stop", `YURI 跟${w.role}打招呼`, ""); }
+      }
+      if (tour.greet > 0 && tour.greeted) heading = Math.atan2(tour.greeted.pos.x - yuri.position.x, tour.greeted.pos.z - yuri.position.z);
+      u.setBubble(tour.greet > 0 ? "嗨!辛苦了" : TOUR[tour.stop][1]);
+      u.bubble.visible = tour.wait > 0 || tour.greet > 0;
+    }
+    const waving = FILM_MODE || tour.wait > 0 || tour.greet > 0;
+    if (walking && !still) tour.phase += dt * 9;
+    const sw = walking && !still ? Math.sin(tour.phase) : 0;
+    u.legs[0].rotation.x = sw * .5; u.legs[1].rotation.x = -sw * .5;
+    u.armL.rotation.set(-sw * .4, 0, -.1);
+    u.armR.rotation.set(waving ? 0 : sw * .4, 0, waving ? 2.5 + (still ? 0 : Math.sin(t * 6)) * .35 : .1);
+    yuri.rotation.y = heading + (waving && !still && tour.greet <= 0 ? Math.sin(t * .4) * .12 : 0);
+    yuri.position.y += walking && !still ? Math.abs(Math.sin(tour.phase)) * .012 : 0;
+    u.bubble.position.y = .64 + (still ? 0 : Math.sin(t * 2) * .012);
+    u.shadow.position.set(yuri.position.x, yuri.position.y - (walking ? Math.abs(Math.sin(tour.phase)) * .012 : 0) + .004, yuri.position.z);
   }
   function selectYuri() {
     state.sel = { type:"yuri" }; selectedOwners = new Set(); recolor(); showFlows([]); setLabels(null); clearPins();
-    openCard(`<div class="eyebrow">人物 · ${esc(hb.name)}</div><h2>YURI</h2><p>這座島的主人。穿著白帽 T 和牛仔褲站在碼頭頭,向每一艘靠岸的渡輪招手:「歡迎加入測試!」</p>
-      <p>上岸的訪客會沿著參與測試的路線,經協議本部、題庫走到測評實驗室,親自比一次有協議和沒協議的回答。</p>
-      <div class="chips">${islandChip(harbor)}${flowChip(flows.find(f => f.id === "f-visit"))}</div>`);
+    const here = TOUR[tour.stop], name = here[0] === "harbor" ? hb.name : islandById[here[0]].name;
+    openCard(`<div class="eyebrow">人物 · 正在走訪</div><h2>YURI</h2><p>這座島的主人,穿著白帽 T 和牛仔褲,照著測評循環的順序一島一島走,走走停停,遇到小人就打招呼。</p>
+      <ol class="list">${TOUR.map(([id, label], k) => `<li><button type="button" ${id === "harbor" ? "data-harbor" : `data-island="${islandById[id].index}"`}${k === tour.stop ? ' aria-current="true"' : ""}>
+        <span class="n">${k + 1}</span><span>${esc(id === "harbor" ? hb.name : islandById[id].name)}<small>${esc(label.replace(/^\S+ /, ""))}</small></span><span></span></button></li>`).join("")}</ol>
+      <p>現在在:${esc(name)}</p>`);
     focus(yuri.position.clone().setY(yuri.position.y + .4), [1.1, 1.3, 2.2]);
   }
   const hqMain = itemById["hq-1"], fwOrigin = new V3(hqMain.pos.x, hqMain.pos.y + hqMain.scale * 1.45, hqMain.pos.z - .16 * hqMain.scale);
@@ -2203,7 +2285,7 @@ async function main() {
   camera.position.copy(overviewPos()); controls.target.copy(overviewTarget());
 
   // ---------- 主迴圈 ----------
-  applyDayNight(); poseWalkers(); boats.forEach(placeBoat); ferries.forEach(f => placeFerry(f, 0)); skiffs.forEach(placeSkiff); poseYuri(); updateBulbs();
+  applyDayNight(); poseWalkers(); boats.forEach(placeBoat); ferries.forEach(f => placeFerry(f, 0)); skiffs.forEach(placeSkiff); poseYuri(0); updateBulbs();
   let last = performance.now(), frame = 0, smallVisible = true;
   function loop(now) {
     requestAnimationFrame(loop);
@@ -2233,7 +2315,7 @@ async function main() {
       boats.forEach(b => { b.userData.a += b.userData.speed * dt; placeBoat(b); });
       ferries.forEach(f => placeFerry(f, dt));
       skiffs.forEach(g => { g.userData.a += g.userData.speed * dt; placeSkiff(g); });
-      updatePods(dt); updateSchools(dt); updateHeli(dt); updateSplashes(dt); poseYuri();
+      updatePods(dt); updateSchools(dt); updateHeli(dt); updateSplashes(dt); poseYuri(dt);
       checkFireworkClock(dt);
       spMat.uniforms.uTime.value = state.time; beam.rotation.y += dt * .7;
       bows.forEach(b => b.tails.forEach((t, k) => { t.rotation.z = Math.sin(state.time * 2.2 + b.phase + k * 1.3) * .14; t.rotation.x = Math.sin(state.time * 1.7 + b.phase) * .1; }));
