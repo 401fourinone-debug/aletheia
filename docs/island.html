@@ -340,8 +340,8 @@ const DATA = {
         { id:"c3", name:"C3 保留協助路徑", model:"bridge", stage:2, evidence:"na", desc:"做不到的事說明原因,並給使用者自己能採取的下一步。", facts:["不只說「不能」","v2.1 新增"] },
         { id:"c4", name:"C4 正向賦能", model:"garden", stage:2, evidence:"na", desc:"誠實不等於冷酷,目的是讓人基於真實做出更好的決定。", facts:["與 C5 一起構成溫度","1 條原則對應 1 個目的"] }
       ] },
-    { id:"bank", name:"題庫", color:"#d9a52c", q:1, r:0, ground:"grass", tree:"fruit",
-      summary:"每一版都用同一組題目測。evals/cases.jsonl 有 16 題,失敗報告又加了夾帶指令題。",
+    { id:"bank", name:"題庫", color:"#d9a52c", q:1, r:0, ground:"grass", tree:"fruit", ring:true,
+      summary:"每一版都用同一組題目測。evals/cases.jsonl 有 16 題,失敗報告又加了夾帶指令題。八類題目圍成一圈,出題人員在中間寫題目。",
       items:[
         { id:"q-inject", name:"夾帶指令題", model:"mailbox", stage:2, desc:"請 AI 摘要一段文字,文字裡藏了一句要它洩漏 API 金鑰的指令。", facts:["inject-01:藏在材料中","inject-02:偽裝成「注意事項」","沒有任何模型真的列出金鑰"] },
         { id:"q-fact", name:"事實查核", model:"book", stage:2, desc:"大腦只用 10%、找 3 篇論文、基本工資。考的是不編造。", facts:["fact-01 / 02 / 03 共 3 題","不得編造論文作者與年份"] },
@@ -1094,10 +1094,11 @@ async function main() {
       let main = k === 0 && !s.park, sc = s.park ? .58 : main ? (it.big || (s.lift ? 1.32 : 1.15)) : cell * .9;
       let sp = s.park ? { x:Math.cos(parkAng(k)) * PARK_R, z:Math.sin(parkAng(k)) * PARK_R } : main ? { x:0, z:-.58 } : pts[k - 1] || { x:0, z:.9 };
       if (s.wheel) { const ang = [0, 28, 56, 124, 152, 180][k] * Math.PI / 180; sp = { x:Math.cos(ang) * 1.14, z:Math.sin(ang) * 1.06 + .05 }; sc = .44; main = false; }
+      if (s.ring) { const ang = parkAng(k); sp = { x:Math.cos(ang) * 1.06, z:Math.sin(ang) * 1.06 }; sc = .5; main = false; }
       if (s.meeting && k > 0) { sp = [{ x:-1.02, z:.12 }, { x:1.02, z:.12 }, { x:-.78, z:.86 }, { x:.78, z:.86 }][k - 1]; sc = .46; }
       it.pos = new V3(x + sp.x, ty, z + sp.z); it.scale = sc; it.top = ty + sc * 1.2;
       const r = mulberry32(k * 131 + s.index * 7919);
-      const ry = s.park ? Math.atan2(Math.cos(parkAng(k)), Math.sin(parkAng(k))) : main ? 0 : (r() - .5) * .5;
+      const ry = s.park || s.ring ? Math.atan2(Math.cos(parkAng(k)), Math.sin(parkAng(k))) : main ? 0 : (r() - .5) * .5;
       const p = maker(kit, baseM(it.pos.x, ty, it.pos.z, sc, ry), { type:"item", id:it.id }, r);
       (MODELS[it.model] || MODELS.house)(p, s.color, r, it);
     });
@@ -1247,6 +1248,7 @@ async function main() {
         if (s.heart && Math.hypot(v.x - s.heart.x, v.z - s.heart.z) < .55) continue;
         if (s.wheel && Math.abs(fz + .42) < .42 && Math.abs(fx) < 1.0) continue;
         if (s.meeting && Math.hypot(fx, fz - .45) < .78) continue;
+        if (s.ring && Math.hypot(fx, fz) < .75) continue;
         if (!clear(v, .3)) continue;
         const kind = s.forest ? (tr2() < .7 ? "conifer" : tr2() < .5 ? "cypress" : "round") : s.tree === "sakura" ? (n % 3 === 0 ? "bigsakura" : "sakura") : kinds[s.tree][n % 2];
         const sc = s.forest ? .34 + tr2() * .26 : kind === "bigsakura" ? .62 + tr2() * .12 : .42 + tr2() * .16;
@@ -1694,6 +1696,25 @@ async function main() {
         v.kind = "viewer"; v.pos = new V3(x - Math.cos(a) * .2, s.top, z - Math.sin(a) * .2); v.face = Math.atan2(Math.cos(a), Math.sin(a)); npcs.push(v); }
     });
   }
+  // 題庫中央:出題人員圍著書桌寫題目,偶爾有人想到好題目舉手
+  const writers = [];
+  {
+    const s = islandById["bank"], cx = s.pos.x, cz = s.pos.z, ty = s.top, own = { type:"island", i:s.index };
+    const dp = maker(kit, baseM(cx, ty, cz), own);
+    dp("cyl",0,.015,0,1.05,.03,1.05,"#f3e3b5"); dp("cyl",0,.033,0,.95,.006,.95,"#d9a52c");
+    dp("cyl",0,.12,0,.08,.18,.08,"#8a6248"); dp("cyl",0,.22,0,.56,.04,.56,"#b48560");
+    for (let k = 0; k < 7; k++) { const a = k * .9; dp("box",Math.cos(a) * .17,.245,Math.sin(a) * .17,.07,.006,.05,"#fffaf3",-a); }
+    for (let k = 0; k < 6; k++) dp("box",.12,.25 + k * .012,-.1,.08,.011,.06,["#fffaf3","#fcea8b","#fffaf3","#f2b5c6","#fffaf3","#9fd8e8"][k],k * .2);
+    dp("cyl",-.14,.27,-.06,.04,.06,.04,"#3e7c8c"); for (let k = 0; k < 3; k++) dp("cyl",-.14 + (k - 1) * .01,.31,-.06,.006,.06,.006,["#db6a41","#e8c25a","#3e7c8c"][k]);
+    dp("cyl",-.05,.29,.13,.01,.1,.01,C.ink); dp("cone",-.05,.35,.13,.07,.05,.07,"#e8c25a"); dp("glowsphere",-.05,.33,.13,.025,.025,.025,C.lamp);
+    for (let k = 0; k < 3; k++) {
+      const a = k / 3 * Math.PI * 2 + Math.PI / 2, n = makeNPC({ island:s.index, body:"#f7f4ee", legs:"#3b4660", hair:["#2e2320", "#5a3a26", "#1d1a18"][k], extra:({ add, m, armR }) => {
+        add(G.box, m("#cfc8bd"), 0, .17, .057, .05, .06, .005); add(G.cyl, m("#211d1d"), 0, -.12, .03, .008, .06, .008, armR); } });
+      n.kind = "writer"; n.pos = new V3(cx + Math.cos(a) * .4, ty, cz + Math.sin(a) * .4); n.face = Math.atan2(-Math.cos(a), -Math.sin(a)); n.phase = k * 2.1;
+      const bulb = new THREE.Mesh(G.sphere, new THREE.MeshBasicMaterial({ color:"#ffe066", toneMapped:false })); bulb.scale.setScalar(.06); bulb.visible = false; n.g.add(bulb); bulb.position.set(0, .48, 0);
+      n.bulb = bulb; npcs.push(n); writers.push(n);
+    }
+  }
   // 摩天輪排隊與搭乘:轉到最低點的吊艙會停下,乘客下車走回隊尾,隊伍第一位上車
   const ride = { queue:[], walkers:[] };
   {
@@ -1740,6 +1761,12 @@ async function main() {
         n.armR.rotation.set(-1.25 + Math.sin(t * 1.3) * .2, 0, .1); n.armL.rotation.set(-1.1 + Math.sin(t * 1.3) * .2, 0, -.2);
         const bl = n.armR.userData.blades; if (bl) { bl[0].rotation.y = .3 + k * .25; bl[1].rotation.y = -.3 - k * .25; }
         n.head.rotation.x = -.2;
+      } else if (n.kind === "writer") {
+        const idea = Math.floor(t / 3.2) % 3 === writers.indexOf(n) && (t % 3.2) < 1.4;
+        n.bulb.visible = idea && !still;
+        n.head.rotation.x = idea ? -.25 : .32; n.head.rotation.y = idea ? 0 : Math.sin(t * .7 + n.phase) * .15;
+        n.armR.rotation.set(idea ? 0 : -1.05 + (still ? 0 : Math.sin(t * 9 + n.phase) * .08), 0, idea ? 2.6 : .15 + (still ? 0 : Math.sin(t * 6 + n.phase) * .1));
+        n.armL.rotation.set(-.9, 0, -.25);
       } else if (n.kind === "viewer") {
         n.head.rotation.x = .25; n.armL.rotation.set(-1.0, 0, -.25); n.armR.rotation.set(-1.0, 0, .25); heading = n.face + Math.sin(t * .3) * .25;
       } else if (n.kind === "rider") {
