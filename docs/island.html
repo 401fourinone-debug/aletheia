@@ -1279,25 +1279,31 @@ async function main() {
   const mk = (name, count, color, mat) => { const m = new THREE.InstancedMesh(wGeo[name], mat || new THREE.MeshStandardMaterial({ roughness:.7 }), count);
     m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.castShadow = name !== "shadow";
     if (color) for (let i = 0; i < count; i++) m.setColorAt(i, new Col(color)); scene.add(m); walkerMeshes[name] = m; return m; };
-  mk("leg", WN * 2, "#4b4440"); mk("arm", WN * 2); mk("body", WN); mk("head", WN, "#f3d2b8"); mk("hair", WN); mk("eye", WN * 2, C.ink); mk("hat", WN); mk("cargo", WN);
+  mk("leg", WN * 2, "#4b4440"); mk("arm", WN * 2); mk("body", WN); mk("head", WN, "#f3d2b8"); mk("hair", WN); mk("eye", WN * 2, C.ink); mk("cargo", WN);
   mk("shadow", WN, "#000000", new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:.22, depthWrite:false }));
   walkers.forEach((w, i) => { const r = DATA.roles[w.role]; const f = flows[w.f];
     walkerMeshes.body.setColorAt(i, new Col(r.body)); walkerMeshes.arm.setColorAt(i * 2, new Col(r.body)); walkerMeshes.arm.setColorAt(i * 2 + 1, new Col(r.body));
-    walkerMeshes.hair.setColorAt(i, new Col(r.hair)); walkerMeshes.hat.setColorAt(i, new Col(r.hatColor || r.hair));
+    walkerMeshes.hair.setColorAt(i, new Col(r.hair));
     walkerMeshes.cargo.setColorAt(i, new Col(f.B.color)); });
-  const badgeTex = {};
-  function badgeTexture(glyph) {
-    if (badgeTex[glyph]) return badgeTex[glyph];
-    const c = document.createElement("canvas"); c.width = c.height = 128; const g = c.getContext("2d");
-    g.fillStyle = "#fff"; g.beginPath(); g.arc(64, 64, 56, 0, Math.PI * 2); g.fill();
-    g.lineWidth = 9; g.strokeStyle = C.coral; g.stroke();
-    g.fillStyle = C.ink; g.font = `800 ${glyph.length > 1 ? 48 : 60}px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`;
-    g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(glyph, 64, 68);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return badgeTex[glyph] = t;
+  // 帽子:每條協作線一頂,帽子正面印著要送的東西(取代頭上的徽章)
+  function hatTexture(glyph, color) {
+    const c = document.createElement("canvas"); c.width = 256; c.height = 128; const g = c.getContext("2d");
+    g.fillStyle = color; g.fillRect(0, 0, 256, 128);
+    g.save(); g.translate(64, 74); g.scale(.71, 1);
+    g.fillStyle = "#fffaf3"; g.beginPath(); g.arc(0, 0, 38, 0, Math.PI * 2); g.fill();
+    g.fillStyle = C.ink; g.font = `900 ${glyph.length > 1 ? 38 : 52}px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`;
+    g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(glyph, 0, 3); g.restore();
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
   }
-  walkers.forEach(w => { const f = flows[w.f];
-    w.badge = new THREE.Sprite(new THREE.SpriteMaterial({ map:badgeTexture(f.glyph), depthWrite:false }));
-    w.badge.scale.setScalar(.16); w.badge.visible = false; scene.add(w.badge); });
+  const hatMeshes = [], hatGroups = {};
+  walkers.forEach((w, i) => (hatGroups[w.f] ||= []).push(i));
+  for (const [fi, list] of Object.entries(hatGroups)) {
+    const f = flows[fi], r = DATA.roles[f.role];
+    const m = new THREE.InstancedMesh(wGeo.hat, new THREE.MeshStandardMaterial({ map:hatTexture(f.glyph, r.hatColor || "#fff8f4"), roughness:.7 }), list.length);
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.castShadow = true;
+    list.forEach((wi, k) => { walkers[wi].hatMesh = m; walkers[wi].hatIdx = k; });
+    scene.add(m); hatMeshes.push(m);
+  }
 
   const _W = new THREE.Matrix4(), _M = new THREE.Matrix4(), _T = new THREE.Matrix4(), _Rm = new THREE.Matrix4(), _S = new THREE.Matrix4(), _Z = new THREE.Matrix4().makeScale(0, 0, 0);
   const _wq = new THREE.Quaternion(), _up = new V3(0, 1, 0), _ws = new V3();
@@ -1326,19 +1332,17 @@ async function main() {
       part(walkerMeshes.hair, i, 0, .305 + bob, -.006, -.25, 0);
       part(walkerMeshes.eye, i * 2, -.026, .305 + bob, .068, 0, 0); part(walkerMeshes.eye, i * 2 + 1, .026, .305 + bob, .068, 0, 0);
       const r = DATA.roles[w.role];
-      if (r.hat === "hard") part(walkerMeshes.hat, i, 0, .33 + bob, 0, 0, 0, 1.15, 1, 1.15);
-      else if (r.hat === "cap") part(walkerMeshes.hat, i, 0, .35 + bob, .01, -.15, 0, 1.05, .5, 1.1);
-      else if (r.hat === "beret") part(walkerMeshes.hat, i, 0, .365 + bob, 0, .2, 0, 1.1, .35, 1.1);
-      else walkerMeshes.hat.setMatrixAt(i, _Z);
+      if (r.hat === "hard") part(w.hatMesh, w.hatIdx, 0, .33 + bob, 0, 0, 0, 1.15, 1, 1.15);
+      else if (r.hat === "beret") part(w.hatMesh, w.hatIdx, 0, .36 + bob, 0, .12, 0, 1.1, .55, 1.1);
+      else part(w.hatMesh, w.hatIdx, 0, .345 + bob, .006, -.1, 0, 1.06, .72, 1.08);
       const carrying = state.tog.carry && w.dir > 0;
       if (carrying) part(walkerMeshes.cargo, i, 0, .2 + bob, .085, 0, 0); else walkerMeshes.cargo.setMatrixAt(i, _Z);
       part(walkerMeshes.shadow, i, 0, .004, 0, 0, 0);
-      w.badge.visible = carrying && camDist < 16;
-      if (w.badge.visible) { w.badge.position.set(w.pos.x, w.pos.y + .52 * k, w.pos.z); w.badge.scale.setScalar(.16 * k); }
       if (w.name) w.name.visible = state.tog.names && camera.position.distanceTo(w.pos) < 14;
       if (w.name && w.name.visible) w.name.position.set(w.pos.x, w.pos.y + .66 * k, w.pos.z);
     });
     for (const m of Object.values(walkerMeshes)) m.instanceMatrix.needsUpdate = true;
+    for (const m of hatMeshes) m.instanceMatrix.needsUpdate = true;
   }
   let lastLog = 0;
   function walkerEvent(w, type, k) {
@@ -1433,11 +1437,15 @@ async function main() {
   // ---------- YURI:站在協議本部大門前 ----------
   const yuri = new THREE.Group();
   {
-    const hq = islandById["hq"], ym = c => new THREE.MeshStandardMaterial({ color:c, roughness:.7 });
-    const skin = ym("#f3d2b8"), top = ym("#db6a41"), pants = ym("#3b4660"), hair = ym("#2e2320"), scarf = ym("#fcea8b"), shoe = ym("#211d1d");
+    const ym = c => new THREE.MeshStandardMaterial({ color:c, roughness:.7 });
+    const skin = ym("#f3d2b8"), top = ym("#f6f4ef"), pants = ym("#4a6fa5"), hair = ym("#2e2320"), shoe = ym("#fbfaf7"), cord = ym("#cfc8bd");
     const add = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; m.userData.yuri = true; yuri.add(m); return m; };
     for (const sx of [-.032, .032]) { add(wGeo.leg, pants, sx, .065, 0); add(G.sphere, shoe, sx, .012, .012, .05, .03, .07); }
-    add(wGeo.body, top, 0, .18, 0); add(G.torus, scarf, 0, .245, 0, .13, .13, .13).rotation.x = Math.PI / 2;
+    add(wGeo.body, top, 0, .18, 0);
+    add(G.sphere, top, 0, .265, -.05, .15, .12, .1); add(G.torus, top, 0, .25, -.005, .12, .12, .15).rotation.x = Math.PI / 2;
+    for (const sx of [-.016, .016]) add(G.box, cord, sx, .215, .058, .006, .045, .006);
+    add(G.box, ym("#e9e5dd"), 0, .155, .056, .07, .03, .008);
+    for (const sx of [-.032, .032]) add(G.box, ym("#3e5f8f"), sx, .118, 0, .052, .012, .052);
     const armL = new THREE.Group(), armR = new THREE.Group(); armL.position.set(-.075, .225, 0); armR.position.set(.075, .225, 0); yuri.add(armL, armR);
     for (const [g, sx] of [[armL, -1], [armR, 1]]) { const a = new THREE.Mesh(wGeo.arm, top); a.position.y = -.045; a.castShadow = true; a.userData.yuri = true; g.add(a);
       const h = new THREE.Mesh(G.sphere, skin); h.scale.setScalar(.04); h.position.y = -.095; h.userData.yuri = true; g.add(h); }
@@ -1451,21 +1459,34 @@ async function main() {
     g2.fillStyle = "#fcea8b"; g2.font = `900 54px ui-monospace,Menlo,monospace`; g2.textAlign = "center"; g2.textBaseline = "middle"; g2.fillText("YURI", 128, 50);
     const tt = new THREE.CanvasTexture(c); tt.colorSpace = THREE.SRGBColorSpace;
     const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map:tt, depthWrite:false })); tag.scale.set(.2, .075, 1); tag.position.set(0, .47, 0); tag.userData.yuri = true; yuri.add(tag);
-    yuri.position.set(hq.pos.x, hq.top, hq.pos.z + .14); yuri.scale.setScalar(1.55);
-    yuri.userData = { armR, armL }; scene.add(yuri);
-    const sh = new THREE.Mesh(wGeo.shadow, new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:.22, depthWrite:false })); sh.position.set(yuri.position.x, hq.top + .004, yuri.position.z); sh.scale.setScalar(1.6); scene.add(sh);
+    // 招呼對話框
+    const bc = document.createElement("canvas"); bc.width = 420; bc.height = 140; const b2 = bc.getContext("2d");
+    b2.fillStyle = "#ffffff"; b2.beginPath(); b2.roundRect(6, 6, 408, 100, 28); b2.fill();
+    b2.beginPath(); b2.moveTo(190, 104); b2.lineTo(210, 134); b2.lineTo(232, 104); b2.fill();
+    b2.strokeStyle = "#db6a41"; b2.lineWidth = 6; b2.beginPath(); b2.roundRect(6, 6, 408, 100, 28); b2.stroke();
+    b2.fillStyle = "#211d1d"; b2.font = `900 46px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`; b2.textAlign = "center"; b2.textBaseline = "middle"; b2.fillText("歡迎加入測試!", 210, 58);
+    const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace;
+    const bubble = new THREE.Sprite(new THREE.SpriteMaterial({ map:bt, depthWrite:false })); bubble.scale.set(.48, .16, 1); bubble.position.set(0, .64, 0); bubble.userData.yuri = true; yuri.add(bubble);
+    // 站在碼頭頭,面向靠岸的渡輪,也面向鏡頭
+    const spot = harbor.tip.clone().addScaledVector(hDir, -.95).addScaledVector(hPerp, -.16); spot.y = pierY + .02;
+    const face = hDir.clone().multiplyScalar(.6).addScaledVector(hPerp, -.8);
+    yuri.position.copy(spot); yuri.scale.setScalar(1.55);
+    yuri.userData = { armR, armL, bubble, baseRy:Math.atan2(face.x, face.z) }; scene.add(yuri);
+    const sh = new THREE.Mesh(wGeo.shadow, new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:.22, depthWrite:false })); sh.position.set(spot.x, spot.y + .004, spot.z); sh.scale.setScalar(1.6); scene.add(sh);
   }
   const yuriMeshes = []; yuri.traverse(o => { if (o.userData.yuri) yuriMeshes.push(o); });
   function poseYuri() {
     const t = state.time, wave = state.reduced ? 0 : Math.sin(t * 6);
     yuri.userData.armR.rotation.z = 2.5 + wave * .35 * (Math.sin(t * .5) > -.2 ? 1 : 0); yuri.userData.armL.rotation.z = -.1;
     yuri.children.forEach(o => { if (o.isMesh && !o.userData.base) o.userData.base = o.position.y; });
-    yuri.rotation.y = state.reduced ? 0 : Math.sin(t * .4) * .25;
+    yuri.rotation.y = yuri.userData.baseRy + (state.reduced ? 0 : Math.sin(t * .4) * .15);
+    yuri.userData.bubble.position.y = .64 + (state.reduced ? 0 : Math.sin(t * 2) * .012);
   }
   function selectYuri() {
     state.sel = { type:"yuri" }; selectedOwners = new Set(); recolor(); showFlows([]); setLabels(null); clearPins();
-    openCard(`<div class="eyebrow">人物 · 協議本部大門前</div><h2>YURI</h2><p>這座島的主人。站在協議本部門口,看著小人把題目、答案、分數一趟一趟搬過來。</p>
-      <div class="chips">${islandChip(islandById["hq"])}</div>`);
+    openCard(`<div class="eyebrow">人物 · ${esc(hb.name)}</div><h2>YURI</h2><p>這座島的主人。穿著白帽 T 和牛仔褲站在碼頭頭,向每一艘靠岸的渡輪招手:「歡迎加入測試!」</p>
+      <p>上岸的訪客會沿著參與測試的路線,經協議本部、題庫走到測評實驗室,親自比一次有協議和沒協議的回答。</p>
+      <div class="chips">${islandChip(harbor)}${flowChip(flows.find(f => f.id === "f-visit"))}</div>`);
     focus(yuri.position.clone().setY(yuri.position.y + .4), [1.1, 1.3, 2.2]);
   }
   const hqMain = itemById["hq-1"], fwOrigin = new V3(hqMain.pos.x, hqMain.pos.y + hqMain.scale * 1.45, hqMain.pos.z - .16 * hqMain.scale);
@@ -1945,7 +1966,7 @@ async function main() {
     if (thumbCache.has(it.id)) return thumbCache.get(it.id);
     const size = 160, pr = renderer.getPixelRatio(), s = it.scale, t = it.pos;
     thumbCam.position.set(t.x + 1.0 * s, t.y + 1.15 * s, t.z + 1.55 * s); thumbCam.lookAt(t.x, t.y + .5 * s, t.z); thumbCam.updateMatrixWorld();
-    const hidden = [...walkers.map(w => w.badge), ...flows.map(f => f.tube)].filter(o => o.visible); hidden.forEach(o => o.visible = false);
+    const hidden = flows.map(f => f.tube).filter(o => o.visible); hidden.forEach(o => o.visible = false);
     renderer.setScissorTest(true); renderer.setViewport(0, 0, size, size); renderer.setScissor(0, 0, size, size);
     renderer.render(scene, thumbCam);
     const c = document.createElement("canvas"); c.width = c.height = size * 2; const g = c.getContext("2d");
