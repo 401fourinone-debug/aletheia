@@ -2311,7 +2311,7 @@ async function main() {
     function minutesAt(t) { for (let i = 1; i < MIN.length; i++) if (t <= MIN[i][0]) { const [a, ma] = MIN[i - 1], [b, mb] = MIN[i]; return ma + (mb - ma) * (t - a) / (b - a); } return MIN[MIN.length - 1][1]; }
     const opa = (t, a, b, f = .4) => clamp01(Math.min((t - a) / f, (b - t) / f));
     window.__film = { fps:FPS, duration:DUR, frames:FPS * DUR,
-      frame(i) {
+      frame(i, draw = true) {
         const t = i / FPS, dt = Math.max(0, t - tPrev); tPrev = t;
         const steps = Math.max(1, Math.ceil(dt * speed(t) / .05));
         for (let k = 0; k < steps; k++) advance(dt * speed(t) / steps, 0);
@@ -2323,7 +2323,7 @@ async function main() {
         if (c) { capS.textContent = c[2]; capS.hidden = !c[2]; capB.textContent = c[3]; cap.style.opacity = opa(t, c[0], c[1]); } else cap.style.opacity = 0;
         titleEl.style.opacity = opa(t, .3, 4.7, .6); endEl.style.opacity = clamp01((t - 44) / .8);
         let f = 0; for (const x of CUTS) f = Math.max(f, 1 - Math.abs(t - x) / .22); fadeEl.style.opacity = clamp01(f);
-        drawFrame(); return t;
+        if (draw) drawFrame(); return t;
       } };
   }
 }
