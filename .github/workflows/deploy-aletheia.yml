@@ -34,6 +34,6 @@ jobs:
           set ftp:prefer-epsv false
           set net:max-retries 3
           set net:timeout 30
-          mirror --reverse --verbose --only-newer --parallel=4 ./docs/ ./
+          mirror --reverse --verbose --only-newer --parallel=4 --delete --exclude-glob .well-known/ ./docs/ ./
           bye
           LFTP
