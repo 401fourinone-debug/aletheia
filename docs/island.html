@@ -54,10 +54,10 @@ button { font:inherit; color:inherit; }
 #brand h1 small { font-size:15px; font-weight:800; color:var(--coral); letter-spacing:0; }
 #brand h1 small::before { content:""; display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--coral); margin-right:6px; vertical-align:1px; }
 #stats { margin:4px 0 0; color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
-#tools { position:fixed; z-index:10; left:max(16px, env(safe-area-inset-left, 0px)); top:calc(132px + env(safe-area-inset-top, 0px)); display:flex; gap:8px; }
+#tools { position:fixed; z-index:10; left:max(16px, env(safe-area-inset-left, 0px)); top:var(--tools-top, calc(132px + env(safe-area-inset-top, 0px))); display:flex; gap:8px; }
 
 /* 左側詳細卡 */
-#card { left:max(16px, env(safe-area-inset-left, 0px)); top:calc(192px + env(safe-area-inset-top, 0px)); bottom:96px; width:340px; border-radius:22px; display:flex; flex-direction:column; overflow:hidden; }
+#card { z-index:11; left:max(16px, env(safe-area-inset-left, 0px)); top:var(--left-top, calc(192px + env(safe-area-inset-top, 0px))); bottom:96px; width:340px; border-radius:22px; display:flex; flex-direction:column; overflow:hidden; }
 #card .x { position:absolute; right:10px; top:10px; z-index:2; }
 #cardBody { overflow-y:auto; padding:18px 20px 22px; overscroll-behavior:contain; }
 #cardBody h2 { margin:4px 44px 10px 0; font:800 22px/1.3 var(--sans); text-wrap:balance; }
@@ -128,7 +128,7 @@ dl.kv dt { color:var(--muted); } dl.kv dd { margin:0; font-weight:700; }
 #sideList .empty { color:var(--muted); padding:20px 6px; }
 
 /* 日誌 */
-#log { right:calc(346px + env(safe-area-inset-right, 0px)); top:calc(16px + env(safe-area-inset-top, 0px)); width:296px; max-height:44vh; display:flex; flex-direction:column; padding:12px 12px 6px; border-radius:16px; }
+#log { left:max(16px, env(safe-area-inset-left, 0px)); top:var(--left-top, calc(192px + env(safe-area-inset-top, 0px))); width:300px; max-height:min(44vh, calc(100vh - var(--left-top, 192px) - 104px)); display:flex; flex-direction:column; padding:12px 12px 6px; border-radius:16px; }
 #log[hidden] { display:none; }
 #log header { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
 #log header b { font-weight:800; }
@@ -203,7 +203,6 @@ body.film .panel, body.film #tools, body.film #hudToggle, body.film #intro, body
 #film .end small { font:600 26px/1.3 ui-monospace,Menlo,monospace; color:#ffd25e; letter-spacing:1px; }
 #film .fade { position:absolute; inset:0; background:#000; opacity:0; }
 
-@media (max-width:1180px) { #log { right:auto; left:max(372px, calc(16px + env(safe-area-inset-left, 0px))); top:auto; bottom:96px; max-height:30vh; } }
 @media (max-width:800px) {
   #brand { width:auto; right:calc(76px + env(safe-area-inset-right, 0px)); padding:10px 14px; }
   #brand h1 { font-size:22px; } #brand h1 small { font-size:13px; }
@@ -556,6 +555,15 @@ async function main() {
   setTimeout(() => { const el = document.getElementById("sideStats"); if (el) el.textContent = `${islands.length} 座島 / ${items.length} 個細項\n選一座島,走進它的測評流程。`;
     const fc = document.getElementById("flowCount"); if (fc) fc.textContent = flows.length; });
   $("#stats").textContent = `${islands.length} 座島 · ${items.length} 棟建物 · ${flows.length} 條協作線 · 1 座訪客碼頭`;
+  // 左欄:標題卡高度會隨字型換行而變,按鈕、日誌、島卡依實際高度往下排,避免疊到標題
+  function layoutLeft() {
+    const b = $("#brand").getBoundingClientRect().bottom, t = b + 10, root = document.documentElement.style;
+    root.setProperty("--tools-top", t + "px");
+    root.setProperty("--left-top", t + $("#tools").offsetHeight + 12 + "px");
+  }
+  layoutLeft();
+  new ResizeObserver(layoutLeft).observe($("#brand"));
+  document.fonts?.ready.then(layoutLeft);
 
   // ---------- 渲染器、相機 ----------
   const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, powerPreference:"high-performance" });
