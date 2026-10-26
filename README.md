@@ -60,3 +60,19 @@ v2.2 的修改全部源自上面這兩份報告。報告中「協議反而變差
 **測評的限制**(必須誠實說明):目前只有 16 題、只在一個模型(Claude Haiku 4.5)上測、
 由單一模型評分。兩次測試的基準組分數相差約兩題,代表單次結果的雜訊不小。
 **這些數字不足以宣稱協議對所有模型都有效。** 擴充題數與跨模型測試是待辦事項。
+
+## 維護
+
+網站檔案都在 `docs/`,正式站是 <https://aletheia.to24tw.com>。
+
+部署是自動的:push 到 `main` 且動到 `docs/`,GitHub Actions 就會用 FTPS 上傳
+(見 `.github/workflows/deploy-aletheia.yml`,FTP 帳密放在 repo 的 Secrets)。
+本機不需要、也不應該存主機密碼。
+
+```bash
+python3 kit/build.py        # 協議或題庫改過之後,重建 docs/aletheia-tester-kit.zip
+bash kit/verify-site.sh     # 比對線上實際內容與 docs/,確認部署真的生效
+```
+
+`verify-site.sh` 只讀公開網址,不需要任何帳號密碼。workflow 成功不等於線上就是最新版,
+改完上線後跑一次比較保險。
