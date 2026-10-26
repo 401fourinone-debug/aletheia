@@ -24,10 +24,12 @@ else
 fi
 
 echo "本機 docs/  vs  $SITE"
-same=0; diff=0; missing=0
+same=0; diff=0; missing=0; skipped=0
 for f in "${FILES[@]}"; do
   printf '  %-26s ' "$f"
   if [ ! -f "$DOCS/$f" ]; then echo "docs/ 裡沒有這個檔"; missing=$((missing+1)); continue; fi
+  # .php 由主機執行,回傳的是結果不是原始碼,拿來比對沒有意義
+  case "$f" in *.php) echo "略過(伺服器端執行)"; skipped=$((skipped+1)); continue;; esac
   code=$(curl -sS -o /tmp/_vs.$$ -w '%{http_code}' --max-time 120 -H 'Cache-Control: no-cache' "$SITE/$f" 2>/dev/null)
   if [ "$code" != "200" ]; then
     echo "線上取不到(HTTP $code)"; diff=$((diff+1))
@@ -39,7 +41,7 @@ for f in "${FILES[@]}"; do
   rm -f /tmp/_vs.$$
 done
 
-echo "一致 $same、不一致 $diff、缺檔 $missing"
+echo "一致 $same、不一致 $diff、缺檔 $missing、略過 $skipped"
 if [ $diff -gt 0 ]; then
   echo "線上還不是最新版。剛 push 的話等 GitHub Actions 跑完再試;"
   echo "一直不一致就去 GitHub 的 Actions 分頁看 Deploy 有沒有失敗。"
