@@ -106,6 +106,14 @@ dl.kv dt { color:var(--muted); } dl.kv dd { margin:0; font-weight:700; }
 #side { right:max(16px, env(safe-area-inset-right, 0px)); top:calc(16px + env(safe-area-inset-top, 0px)); bottom:calc(16px + env(safe-area-inset-bottom, 0px)); width:318px; display:flex; flex-direction:column; padding:14px 12px 8px; }
 #side[hidden] { display:none; }
 #search { width:100%; min-height:44px; border:1px solid var(--line); border-radius:12px; padding:0 14px; background:#fff; font:inherit; }
+.pc textarea, .pc input { width:100%; border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:#fff; font:inherit; font-size:14px; }
+.pc textarea { min-height:92px; resize:vertical; line-height:1.55; }
+.pc label { display:block; margin:10px 0 4px; font-size:12px; color:var(--muted); }
+.pc .send { width:100%; min-height:44px; margin-top:12px; border:0; border-radius:999px; background:var(--coral); color:#fff; font:inherit; font-weight:800; cursor:pointer; }
+.pc .send:hover { filter:brightness(1.06); }
+.pc .send[disabled] { background:var(--line); color:var(--muted); cursor:not-allowed; filter:none; }
+.pc .chip[aria-pressed="true"] { background:var(--yellow); box-shadow:0 0 0 2px var(--coral) inset; }
+.pc .count { margin-top:6px; font-size:12px; color:var(--muted); text-align:right; }
 .tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:10px 0 8px; }
 #sideList { overflow-y:auto; flex:1; padding-right:2px; overscroll-behavior:contain; }
 #sideList details { border-bottom:1px solid var(--line); }
@@ -1932,17 +1940,34 @@ async function main() {
   const yuri = new THREE.Group();
   {
     const ym = c => new THREE.MeshStandardMaterial({ color:c, roughness:.7 });
-    const skin = ym("#f3d2b8"), top = ym("#f6f4ef"), pants = ym("#4a6fa5"), hair = ym("#2e2320"), shoe = ym("#fbfaf7"), cord = ym("#cfc8bd");
+    const skin = ym("#f3d2b8"), coat = ym("#f7f5f0"), shirt = ym("#3e7c8c"), jeans = ym("#4a6fa5"), hair = ym("#2e2320"), shoe = ym("#fbfaf7");
     const add = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1, parent = yuri) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; m.userData.yuri = true; parent.add(m); return m; };
     const legs = [-.032, .032].map(sx => { const g = new THREE.Group(); g.position.set(sx, .12, 0); yuri.add(g);
-      add(wGeo.leg, pants, 0, -.055, 0, 1, 1, 1, g); add(G.box, ym("#3e5f8f"), 0, -.002, 0, .052, .012, .052, g); add(G.sphere, shoe, 0, -.108, .012, .05, .03, .07, g); return g; });
-    add(wGeo.body, top, 0, .18, 0);
-    add(G.sphere, top, 0, .265, -.05, .15, .12, .1); add(G.torus, top, 0, .25, -.005, .12, .12, .15).rotation.x = Math.PI / 2;
-    for (const sx of [-.016, .016]) add(G.box, cord, sx, .215, .058, .006, .045, .006);
-    add(G.box, ym("#e9e5dd"), 0, .155, .056, .07, .03, .008);
+      add(wGeo.leg, jeans, 0, -.055, 0, 1, 1, 1, g); add(G.box, ym("#3e5f8f"), 0, -.002, 0, .052, .012, .052, g); add(G.sphere, shoe, 0, -.108, .012, .05, .03, .07, g); return g; });
+    add(wGeo.body, shirt, 0, .18, 0);                                         // 襯衫
+    add(G.rbox, jeans, 0, .105, 0, .098, .072, .078);                         // 牛仔褲腰臀,大衣敞開處會露出來
+    add(G.box, ym("#2f3744"), 0, .135, 0, .101, .013, .081);                  // 皮帶
+    // 研究員長版大衣:前襟兩片垂到大腿,中間敞開
+    for (const sx of [-.047, .047]) add(G.box, coat, sx, .165, .026, .044, .205, .062);
+    add(G.box, coat, 0, .17, -.046, .112, .2, .03);                           // 背面
+    for (const sx of [-.058, .058]) add(G.box, coat, sx, .17, -.012, .016, .2, .07);   // 側身
+    add(G.torus, coat, 0, .25, -.005, .12, .12, .15).rotation.x = Math.PI / 2;         // 大衣領口
+    for (const sx of [-.024, .024]) add(G.box, shirt, sx, .248, .044, .034, .03, .014); // 襯衫領尖
+    add(G.box, shirt, 0, .215, .052, .042, .055, .006);                       // 胸口襯衫
+    add(G.cyl, ym(C.coral), -.05, .214, .062, .007, .034, .007);              // 胸袋的筆
+    add(G.box, ym("#4a4f57"), .045, .232, .058, .004, .046, .004);            // 識別證掛繩
+    add(G.box, ym("#2f3238"), .045, .176, .059, .048, .038, .004);            // 識別證外框
+    add(G.box, ym("#fbfaf7"), .045, .176, .062, .042, .032, .004);            // 識別證
+    add(G.box, ym(C.coral), .045, .187, .064, .042, .009, .002);              // 識別證上緣色條
     const armL = new THREE.Group(), armR = new THREE.Group(); armL.position.set(-.075, .225, 0); armR.position.set(.075, .225, 0); yuri.add(armL, armR);
-    for (const g of [armL, armR]) { add(wGeo.arm, top, 0, -.045, 0, 1, 1, 1, g); add(G.sphere, skin, 0, -.095, 0, .04, .04, .04, g); }
-    add(wGeo.head, skin, 0, .305, 0); add(G.sphere, hair, 0, .33, -.012, .165, .13, .16); add(G.sphere, hair, 0, .29, -.045, .16, .12, .1);
+    for (const g of [armL, armR]) { add(wGeo.arm, coat, 0, -.045, 0, 1, 1, 1, g); add(G.sphere, skin, 0, -.095, 0, .04, .04, .04, g); }
+    add(wGeo.head, skin, 0, .305, 0); add(G.sphere, hair, 0, .332, -.014, .163, .128, .158);
+    add(G.sphere, hair, 0, .318, -.045, .15, .095, .075);                     // 後腦收薄,高馬尾才俐落
+    add(G.box, ym("#241b19"), 0, .352, -.064, .03, .019, .022);               // 髮圈
+    // 高馬尾:圓錐做出一路收尖的尾巴(球串會看得出一顆一顆),根部用小球接順
+    add(G.sphere, hair, 0, .344, -.08, .058, .052, .052);
+    add(G.cone, hair, 0, .3, -.098, .06, .092, .06).rotation.x = Math.PI + .34;
+    add(G.sphere, hair, 0, .258, -.113, .036, .036, .036);                    // 尾端收圓,收得太尖從正後方會像一根刺
     for (const sx of [-.026, .026]) add(wGeo.eye, ym(C.ink), sx, .305, .068);
     add(G.box, ym("#d4655a"), 0, .278, .072, .022, .006, .004);
     for (const sx of [-.045, .045]) add(G.sphere, ym("#f2a7a0"), sx, .285, .062, .022, .012, .008);
@@ -1973,6 +1998,35 @@ async function main() {
     yuri.userData = { armR, armL, legs, bubble, setBubble, shadow:sh, baseRy:Math.atan2(face.x, face.z) }; scene.add(yuri);
   }
   const yuriMeshes = []; yuri.traverse(o => { if (o.userData.yuri) yuriMeshes.push(o); });
+
+  // ---------- 碼頭信箱:訪客留明信片的地方 ----------
+  const mailbox = new THREE.Group();
+  {
+    const mm = c => new THREE.MeshStandardMaterial({ color:c, roughness:.65 });
+    const add = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => {
+      const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz);
+      m.castShadow = true; m.userData.mailbox = true; mailbox.add(m); return m; };
+    add(G.cyl, mm("#7a5a40"), 0, .13, 0, .05, .26, .05);                 // 柱子
+    add(G.box, mm("#8c6a4c"), 0, .005, 0, .2, .03, .2);                  // 底座
+    add(G.rbox, mm(C.coral), 0, .34, 0, .3, .26, .22);                   // 箱體
+    add(G.dome, mm("#b8543a"), 0, .46, 0, .34, .14, .26);                // 圓頂
+    add(G.box, mm(C.ink), 0, .4, .112, .18, .03, .012);                  // 投信口
+    add(G.box, mm("#f3e7d8"), 0, .3, .113, .2, .1, .008);                // 名牌底
+    add(G.cyl, mm(C.gold), 0, .2, .112, .05, .012, .05).rotation.x = Math.PI / 2;  // 小旋鈕
+    // 名牌與飄在上方的愛心,都用 canvas 貼圖
+    const mc = document.createElement("canvas"); mc.width = 256; mc.height = 128; const m2 = mc.getContext("2d");
+    m2.fillStyle = "#211d1d"; m2.beginPath(); m2.roundRect(6, 16, 244, 96, 44); m2.fill();
+    m2.fillStyle = "#fcea8b"; m2.font = '900 46px "Noto Sans TC","PingFang TC",sans-serif';
+    m2.textAlign = "center"; m2.textBaseline = "middle"; m2.fillText("明信片", 128, 64);
+    const mt = new THREE.CanvasTexture(mc); mt.colorSpace = THREE.SRGBColorSpace;
+    const sign = new THREE.Sprite(new THREE.SpriteMaterial({ map:mt, depthWrite:false }));
+    sign.scale.set(.26, .13, 1); sign.position.set(0, .7, 0); sign.userData.mailbox = true; mailbox.add(sign);
+    const spot = harbor.tip.clone().addScaledVector(hDir, -1.35).addScaledVector(hPerp, .2);
+    mailbox.position.copy(spot.setY(pierY + .02)); mailbox.scale.setScalar(1.35);
+    mailbox.rotation.y = Math.atan2(-hPerp.x, -hPerp.z);
+    scene.add(mailbox);
+  }
+  const mailboxMeshes = []; mailbox.traverse(o => { if (o.userData.mailbox) mailboxMeshes.push(o); });
   // 走訪路線:依測評循環的順序
   const TOUR = [["harbor", "歡迎加入測試!"], ["hq", "① 寫協議"], ["bank", "② 出題"], ["lab", "③ 對照測試"], ["judge", "④ 盲評打分"],
     ["report", "⑤ 公開報告"], ["web", "⑥ 放上網站"], ["port", "⑦ 收反例"], ["memo", "⑧ 記下錯誤"], ["todo", "⑨ 排待辦"]];
@@ -2029,11 +2083,33 @@ async function main() {
   function selectYuri() {
     state.sel = { type:"yuri" }; selectedOwners = new Set(); recolor(); showFlows([]); setLabels(null); clearPins();
     const here = TOUR[tour.stop], name = here[0] === "harbor" ? hb.name : islandById[here[0]].name;
-    openCard(`<div class="eyebrow">人物 · 正在走訪</div><h2>YURI</h2><p>這座島的主人,穿著白帽 T 和牛仔褲,照著測評循環的順序一島一島走,走走停停,遇到小人就打招呼。</p>
+    openCard(`<div class="eyebrow">人物 · 正在走訪</div><h2>YURI</h2><p>這座島的主人,研究員打扮:白色長版大衣、青瓷藍襯衫、牛仔褲、低馬尾,胸前掛著識別證。照著測評循環的順序一島一島走,走走停停,遇到小人就打招呼。</p>
       <ol class="list">${TOUR.map(([id, label], k) => `<li><button type="button" ${id === "harbor" ? "data-harbor" : `data-island="${islandById[id].index}"`}${k === tour.stop ? ' aria-current="true"' : ""}>
         <span class="n">${k + 1}</span><span>${esc(id === "harbor" ? hb.name : islandById[id].name)}<small>${esc(label.replace(/^\S+ /, ""))}</small></span><span></span></button></li>`).join("")}</ol>
-      <p>現在在:${esc(name)}</p>`);
-    focus(yuri.position.clone().setY(yuri.position.y + .4), [1.1, 1.3, 2.2]);
+      <p>現在在:${esc(name)}</p>
+      <div class="chips"><button class="chip" type="button" data-unfollow><i></i>停止跟隨,回到全景</button></div>`);
+    startFollow();
+  }
+  // 明信片:內容交給 GitHub Issue 收,網站本身沒有後端,也就不會存到訪客的資料
+  const REPO_NEW = "https://github.com/401fourinone-debug/aletheia/issues/new";
+  function selectMailbox() {
+    state.sel = { type:"mailbox" }; selectedOwners = new Set(); recolor(); showFlows([]); setLabels(null); clearPins();
+    openCard(`<div class="eyebrow">訪客碼頭 · 信箱</div><h2>留一張明信片</h2>
+      <p>寫一句話給這座島。挑過的明信片會貼到<a href="index.html#postcards">首頁的布告欄</a>。</p>
+      <div class="pc">
+        <div class="chips" id="pcMood">
+          <button class="chip" type="button" data-mood="愛心" aria-pressed="true" style="--c:#db6a41"><i></i>給愛心</button>
+          <button class="chip" type="button" data-mood="建議" aria-pressed="false" style="--c:#6f7fb5"><i></i>提建議</button>
+        </div>
+        <label for="pcText">想說的話</label>
+        <textarea id="pcText" maxlength="300" placeholder="例如:島上的燈塔很療癒,但手機上字有點小。"></textarea>
+        <div class="count"><span id="pcN">0</span>/300</div>
+        <label for="pcName">想署名的話(可以不填)</label>
+        <input id="pcName" maxlength="24" placeholder="匿名">
+        <button class="send" type="button" data-postcard disabled>寄出明信片</button>
+        <p class="eyebrow" style="margin-top:10px">按下後會開一個 GitHub 頁面,內容已經幫你填好,<b>要再按一次 Submit 才算寄出</b>。需要 GitHub 帳號。</p>
+      </div>`);
+    focus(mailbox.position.clone().setY(mailbox.position.y + .45), [1.2, 1.1, 1.9]);
   }
   const hqMain = itemById["hq-1"], fwOrigin = new V3(hqMain.pos.x, hqMain.pos.y + hqMain.scale * 1.45, hqMain.pos.z - .16 * hqMain.scale);
   const rockets = [], fr = mulberry32(2026);
@@ -2387,6 +2463,21 @@ async function main() {
 
   // ---------- 相機 ----------
   let W = 1, H = 1, flight = null;
+  // 跟隨 YURI:鏡頭與焦點一起跟著他平移,過程中仍然可以自由旋轉與縮放
+  let follow = null; const _fd = new V3();
+  function startFollow() { follow = { last:yuri.position.clone(), locked:false }; focus(yuri.position.clone().setY(yuri.position.y + .4), [1.1, 1.3, 2.2]); }
+  function stepFollow() {
+    if (state.sel?.type !== "yuri") { follow = null; return; }   // 選了別的東西就自動結束
+    if (flight) { follow.last.copy(yuri.position); return; }      // 先讓開場的飛行跑完
+    if (!follow.locked) {                                        // 飛行結束的第一格:焦點對準他,鏡頭維持相對位置
+      const off = camera.position.clone().sub(controls.target);
+      controls.target.copy(yuri.position).setY(yuri.position.y + .4);
+      camera.position.copy(controls.target).add(off);
+      follow.locked = true; follow.last.copy(yuri.position); return;
+    }
+    _fd.subVectors(yuri.position, follow.last);
+    if (_fd.lengthSq() > 1e-10) { camera.position.add(_fd); controls.target.add(_fd); follow.last.copy(yuri.position); }
+  }
   const overviewDist = () => { const a = W / H; return a > 1.3 ? 28.5 : a > .8 ? 38 : 56; };
   function flyTo(pos, target) {
     if (state.reduced) { camera.position.copy(pos); controls.target.copy(target); controls.update(); dirty = true; return; }
@@ -2404,7 +2495,19 @@ async function main() {
   function goOverview() { state.tog.bird = false; syncToggles(); controls.minPolarAngle = THREE.MathUtils.degToRad(25); flyTo(overviewPos(), overviewTarget()); }
   function focus(target, offset) {
     const t = target.clone(), o = new V3(...offset);
-    if (!isMobile && !$("#card").hidden) { const fwd = o.clone().negate(), right = new V3().crossVectors(fwd, _up).normalize(); t.addScaledVector(right, -1.5); }
+    // 左邊卡片與右邊清單各擋掉一塊畫面,把焦點挪到「看得見的那一塊」的正中間。
+    // 位移量要跟著鏡頭距離算,不能用固定值,否則放大縮小後就偏掉。
+    if (!isMobile) {
+      const card = $("#card"), side = $("#side");
+      const occLeft = card.hidden ? 0 : card.getBoundingClientRect().right;
+      const occRight = side.hidden ? 0 : W - side.getBoundingClientRect().left;
+      const dx = (occLeft - occRight) / 2;                       // 可見區中心與畫面中心差幾個 px
+      if (Math.abs(dx) > 1) {
+        const wpp = 2 * o.length() * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / H;  // 每 px 幾個世界單位
+        const fwd = o.clone().negate(), rv = new V3().crossVectors(fwd, _up).normalize();
+        t.addScaledVector(rv, -dx * wpp);
+      }
+    }
     flyTo(t.clone().add(o), t);
   }
 
@@ -2433,6 +2536,27 @@ async function main() {
     cardBody.querySelectorAll("[data-island]").forEach(b => b.addEventListener("click", () => selectIsland(+b.dataset.island)));
     cardBody.querySelectorAll("[data-flow]").forEach(b => b.addEventListener("click", () => selectFlow(+b.dataset.flow)));
     cardBody.querySelectorAll("[data-harbor]").forEach(b => b.addEventListener("click", selectHarbor));
+    cardBody.querySelectorAll("[data-unfollow]").forEach(b => b.addEventListener("click", () => { follow = null; clearSelection(); goOverview(); }));
+    const pcSend = cardBody.querySelector("[data-postcard]");
+    if (pcSend) {
+      const txt = cardBody.querySelector("#pcText"), nm = cardBody.querySelector("#pcName"), cnt = cardBody.querySelector("#pcN");
+      let mood = "愛心";
+      cardBody.querySelectorAll("#pcMood .chip").forEach(b => b.addEventListener("click", () => {
+        mood = b.dataset.mood;
+        cardBody.querySelectorAll("#pcMood .chip").forEach(o => o.setAttribute("aria-pressed", String(o === b)));
+      }));
+      const sync = () => { const v = txt.value.trim(); cnt.textContent = txt.value.length; pcSend.disabled = v.length < 2; };
+      txt.addEventListener("input", sync); sync();
+      pcSend.addEventListener("click", () => {
+        const body = txt.value.trim(); if (body.length < 2) return;
+        const who = nm.value.trim() || "匿名";
+        const url = `${REPO_NEW}?labels=${encodeURIComponent("明信片")}`
+          + `&title=${encodeURIComponent(`[明信片] ${mood} · ${who}`)}`
+          + `&body=${encodeURIComponent(`${body}\n\n— ${who}\n\n(從真實島碼頭的信箱寄出)`)}`;
+        window.open(url, "_blank", "noopener");
+        addLog("stop", `碼頭信箱收到一張明信片(${mood})`, "");
+      });
+    }
     cardBody.querySelectorAll("[data-fw]").forEach(b => b.addEventListener("click", () => {
       focus(new V3(fwOrigin.x, hqMain.pos.y + 3.4, fwOrigin.z), [3.4, 4.4, 11]); launchFirework(); setTimeout(() => launchFirework(), 350); }));
   }
@@ -2587,7 +2711,7 @@ async function main() {
     const r = renderer.domElement.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
     ray.setFromCamera(ndc, camera);
     walkerMeshes.body.boundingSphere = null; walkerMeshes.head.boundingSphere = null;
-    const targets = [walkerMeshes.body, walkerMeshes.head, ...flows.filter(f => f.tube.visible).map(f => f.tube), ...modelSprites, ...signMeshes, ...yuriMeshes, ...kitMeshes, ...islandTops, ...ferries];
+    const targets = [walkerMeshes.body, walkerMeshes.head, ...flows.filter(f => f.tube.visible).map(f => f.tube), ...modelSprites, ...signMeshes, ...yuriMeshes, ...mailboxMeshes, ...kitMeshes, ...islandTops, ...ferries];
     const hitBow = ray.intersectObjects(bowMeshes, false)[0];
     if (hitBow) { const near = ray.intersectObjects(targets, false)[0]; if (!near || near.distance > hitBow.distance - .05) return selectBow(hitBow.object.userData.bow); }
     const hit0 = ray.intersectObjects(ferries, true)[0];
@@ -2603,6 +2727,7 @@ async function main() {
     if (o.userData.harbor) return selectHarbor();
     if (o.userData.model != null) return selectModel(o.userData.model);
     if (o.userData.yuri) return selectYuri();
+    if (o.userData.mailbox) return selectMailbox();
     if (o.userData.sign) { const t = o.userData.sign; if (t.harbor) return selectHarbor(); if (t.beacon) return selectBeacon(); return selectIsland(t.island); }
     if (o.userData.island != null) return selectIsland(o.userData.island);
   });
@@ -2743,6 +2868,7 @@ async function main() {
     const animating = !state.paused && !state.reduced;
     if (animating) { advance(dt, 10); dirty = true; }
     if (flight) { stepFlight(now); dirty = true; }
+    if (follow) { stepFollow(); dirty = true; }
     if (controls.update()) dirty = true;
     if (!dirty) return;
     drawFrame();
