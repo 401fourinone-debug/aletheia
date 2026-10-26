@@ -140,6 +140,7 @@ footer { color:var(--muted); font-size:.88rem; border-top:1px solid var(--line);
 <h2 id="postcards">明信片布告欄</h2>
 <p>訪客在<a href="island.html">真實島</a>碼頭的信箱留下的話。挑過的會貼在這裡。</p>
 <p class="status" id="pc-status">正在取明信片…</p>
+<p class="status" id="pc-hearts" hidden></p>
 <ul class="cards" id="pc-list" hidden></ul>
 
 <footer>Aletheia 真實引擎協議 v2.4・CC BY 4.0・<a href="island.html">真實島 3D 城市</a>・本站內容由 AI 協助產生，測評數據為實際執行結果。</footer>
@@ -196,6 +197,17 @@ footer { color:var(--muted); font-size:.88rem; border-top:1px solid var(--line);
     if (!list.children.length) { status.textContent = '還沒有明信片。到島上的碼頭信箱留第一張吧。'; return; }
     status.hidden = true; list.hidden = false;
   }
+
+  // 愛心總數(只有正式站有 PHP,GitHub Pages 上抓不到就不顯示)
+  fetch('hearts.php', { headers: { Accept: 'application/json' } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d || typeof d.hearts !== 'number' || d.hearts <= 0) return;
+      var el = document.getElementById('pc-hearts');
+      el.textContent = '訪客到目前為止按了 ' + d.hearts + ' 顆愛心。';
+      el.hidden = false;
+    })
+    .catch(function () {});
 
   var cached = null;
   try { cached = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) {}

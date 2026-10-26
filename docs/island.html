@@ -114,6 +114,13 @@ dl.kv dt { color:var(--muted); } dl.kv dd { margin:0; font-weight:700; }
 .pc .send[disabled] { background:var(--line); color:var(--muted); cursor:not-allowed; filter:none; }
 .pc .chip[aria-pressed="true"] { background:var(--yellow); box-shadow:0 0 0 2px var(--coral) inset; }
 .pc .count { margin-top:6px; font-size:12px; color:var(--muted); text-align:right; }
+.pc .heart { width:100%; min-height:48px; display:flex; align-items:center; justify-content:center; gap:8px;
+  border:0; border-radius:999px; background:var(--coral); color:#fff; font:inherit; font-weight:800; cursor:pointer; }
+.pc .heart:hover { filter:brightness(1.06); }
+.pc .heart:active { transform:translateY(1px); }
+.pc .heart b { font-variant-numeric:tabular-nums; font-weight:800; }
+.pc .heart[hidden] { display:none; }
+.pc .rule { height:1px; margin:16px 0 14px; background:var(--line); border:0; }
 .tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:10px 0 8px; }
 #sideList { overflow-y:auto; flex:1; padding-right:2px; overscroll-behavior:contain; }
 #sideList details { border-bottom:1px solid var(--line); }
@@ -2092,11 +2099,47 @@ async function main() {
   }
   // 明信片:內容交給 GitHub Issue 收,網站本身沒有後端,也就不會存到訪客的資料
   const REPO_NEW = "https://github.com/401fourinone-debug/aletheia/issues/new";
+  // 愛心:按一下從信箱飄幾顆上來。數字存在主機的 hearts.php,
+  // GitHub Pages 上沒有 PHP,抓不到就只播動畫、不顯示數字。
+  const heartTex = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d");
+    g.fillStyle = C.coral; g.beginPath(); g.moveTo(32, 57);
+    g.bezierCurveTo(3, 36, 7, 11, 24, 11); g.bezierCurveTo(30, 11, 32, 17, 32, 17);
+    g.bezierCurveTo(32, 17, 34, 11, 40, 11); g.bezierCurveTo(57, 11, 61, 36, 32, 57); g.fill();
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; return tx;
+  })();
+  const hearts = [];
+  function popHearts(n = 7) {
+    if (state.reduced) return;
+    for (let i = 0; i < n; i++) {
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:heartTex, depthWrite:false, transparent:true }));
+      s.position.copy(mailbox.position).add(new V3((Math.random() - .5) * .14, .62 + Math.random() * .12, (Math.random() - .5) * .14));
+      s.userData = { life:1.3 + Math.random() * .6, vx:(Math.random() - .5) * .14, vy:.34 + Math.random() * .18, vz:(Math.random() - .5) * .14 };
+      s.scale.setScalar(.085); scene.add(s); hearts.push(s);
+    }
+    dirty = true;
+  }
+  function updateHearts(dt) {
+    for (let i = hearts.length - 1; i >= 0; i--) {
+      const s = hearts[i], u = s.userData;
+      if ((u.life -= dt) <= 0) { scene.remove(s); s.material.dispose(); hearts.splice(i, 1); continue; }
+      s.position.x += u.vx * dt; s.position.y += u.vy * dt; s.position.z += u.vz * dt;
+      s.material.opacity = Math.min(1, u.life * 1.5);
+      s.scale.setScalar(.085 * (1 + (1.9 - u.life) * .1));
+    }
+  }
+  let heartCount = null;
+  const heartUrl = new URL("hearts.php", location.href).href;
+  function showHeartCount(el) { if (el) el.textContent = heartCount == null ? "" : ` · ${heartCount}`; }
   function selectMailbox() {
     state.sel = { type:"mailbox" }; selectedOwners = new Set(); recolor(); showFlows([]); setLabels(null); clearPins();
     openCard(`<div class="eyebrow">訪客碼頭 · 信箱</div><h2>留一張明信片</h2>
       <p>寫一句話給這座島。挑過的明信片會貼到<a href="index.html#postcards">首頁的布告欄</a>。</p>
       <div class="pc">
+        <button class="heart" type="button" data-heart>給愛心<b id="pcHeart"></b></button>
+        <p class="eyebrow" style="margin:8px 0 0">按一下就好,不用帳號、不用留字。</p>
+        <hr class="rule">
+        <p style="margin:0 0 10px">想多說一點的話,寫一張明信片:</p>
         <div class="chips" id="pcMood">
           <button class="chip" type="button" data-mood="愛心" aria-pressed="true" style="--c:#db6a41"><i></i>給愛心</button>
           <button class="chip" type="button" data-mood="建議" aria-pressed="false" style="--c:#6f7fb5"><i></i>提建議</button>
@@ -2537,6 +2580,19 @@ async function main() {
     cardBody.querySelectorAll("[data-flow]").forEach(b => b.addEventListener("click", () => selectFlow(+b.dataset.flow)));
     cardBody.querySelectorAll("[data-harbor]").forEach(b => b.addEventListener("click", selectHarbor));
     cardBody.querySelectorAll("[data-unfollow]").forEach(b => b.addEventListener("click", () => { follow = null; clearSelection(); goOverview(); }));
+    const heartBtn = cardBody.querySelector("[data-heart]");
+    if (heartBtn) {
+      const label = () => cardBody.querySelector("#pcHeart");
+      showHeartCount(label());
+      const sync = d => { if (d && typeof d.hearts === "number") { heartCount = d.hearts; showHeartCount(label()); } };
+      const ask = (opt) => fetch(heartUrl, opt).then(r => r.ok ? r.json() : null).then(sync).catch(() => {});
+      if (heartCount == null) ask({ headers:{ Accept:"application/json" } });
+      heartBtn.addEventListener("click", () => {
+        popHearts();
+        if (heartCount != null) { heartCount++; showHeartCount(label()); }   // 先動,不讓使用者等網路
+        ask({ method:"POST" });
+      });
+    }
     const pcSend = cardBody.querySelector("[data-postcard]");
     if (pcSend) {
       const txt = cardBody.querySelector("#pcText"), nm = cardBody.querySelector("#pcName"), cnt = cardBody.querySelector("#pcN");
@@ -2869,6 +2925,7 @@ async function main() {
     if (animating) { advance(dt, 10); dirty = true; }
     if (flight) { stepFlight(now); dirty = true; }
     if (follow) { stepFollow(); dirty = true; }
+    if (hearts.length) { updateHearts(dt); dirty = true; }
     if (controls.update()) dirty = true;
     if (!dirty) return;
     drawFrame();
