@@ -220,10 +220,10 @@ body.film .panel, body.film #tools, body.film #hudToggle, body.film #intro, body
 #film .fade { position:absolute; inset:0; background:#000; opacity:0; }
 
 @media (max-width:800px) {
-  #brand { width:auto; right:calc(76px + env(safe-area-inset-right, 0px)); padding:10px 14px; }
+  #brand { width:auto; left:max(12px, env(safe-area-inset-left, 0px)); right:max(12px, env(safe-area-inset-right, 0px)); padding:10px 14px; }
   #brand h1 { font-size:22px; } #brand h1 small { font-size:13px; }
   #brand .eyebrow, #stats { display:none; }
-  #tools { left:auto; right:max(12px, env(safe-area-inset-right, 0px)); top:calc(12px + env(safe-area-inset-top, 0px)); flex-direction:column; }
+  #tools { left:0; right:0; justify-content:center; flex-wrap:wrap; padding:0 12px; }
   #side, #card { left:0; right:0; top:auto; bottom:0; width:auto; border-radius:20px 20px 0 0; padding-bottom:env(safe-area-inset-bottom, 0px);
     padding-left:max(12px, env(safe-area-inset-left, 0px)); padding-right:max(12px, env(safe-area-inset-right, 0px)); }
   #side { height:52%; z-index:12; }
@@ -231,7 +231,7 @@ body.film .panel, body.film #tools, body.film #hudToggle, body.film #intro, body
   .sheet-handle { display:block; width:100%; height:22px; border:0; background:none; cursor:ns-resize; touch-action:none; flex:none; }
   .sheet-handle::before { content:""; display:block; width:44px; height:5px; margin:8px auto 0; border-radius:3px; background:#cbbfb3; }
   #cardBody { padding-top:4px; }
-  #log { left:max(12px, env(safe-area-inset-left, 0px)); right:max(12px, env(safe-area-inset-right, 0px)); width:auto; top:calc(72px + env(safe-area-inset-top, 0px)); bottom:auto; max-height:30vh; }
+  #log { left:max(12px, env(safe-area-inset-left, 0px)); right:max(12px, env(safe-area-inset-right, 0px)); width:auto; top:var(--left-top, calc(192px + env(safe-area-inset-top, 0px))); bottom:auto; max-height:30vh; }
   #hud { display:none; flex-wrap:wrap; justify-content:center; left:max(12px, env(safe-area-inset-left, 0px)); right:max(12px, env(safe-area-inset-right, 0px)); transform:none; bottom:calc(72px + env(safe-area-inset-bottom, 0px)); }
   #hud.open { display:flex; }
   #hud .sep { display:none; }
