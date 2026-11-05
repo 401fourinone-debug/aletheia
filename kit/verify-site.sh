@@ -41,7 +41,7 @@ for f in "${FILES[@]}"; do
   rm -f /tmp/_vs.$$
 done
 
-echo "一致 $same、不一致 $diff、缺檔 $missing、略過 $skipped"
+echo "一致 ${same}、不一致 ${diff}、缺檔 ${missing}、略過 ${skipped}"
 if [ $diff -gt 0 ]; then
   echo "線上還不是最新版。剛 push 的話等 GitHub Actions 跑完再試;"
   echo "一直不一致就去 GitHub 的 Actions 分頁看 Deploy 有沒有失敗。"
